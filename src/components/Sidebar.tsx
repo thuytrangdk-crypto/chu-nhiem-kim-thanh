@@ -12,6 +12,7 @@ import {
   Cloud,
   Grid3X3,
   User,
+  GraduationCap,
 } from 'lucide-react';
 import { SyncStatus } from '../services/supabaseService';
 
@@ -58,10 +59,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectBoardTab,
 }) => {
   const teacherNavItems = [
-    { id: 'dashboard', label: 'Tổng quan Lớp', icon: LayoutDashboard },
-    { id: 'students', label: 'Học sinh & Hồ sơ', icon: Users },
-    { id: 'attendance', label: 'Điểm danh Chuyên cần', icon: CalendarCheck },
-    { id: 'board', label: 'Bảng tin & Sơ đồ', icon: Megaphone },
+    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'students', label: 'Học sinh', icon: GraduationCap },
+    { id: 'attendance', label: 'Điểm danh', icon: CalendarCheck },
+    { id: 'board', label: 'Bảng tin & Sơ đồ lớp', icon: Megaphone },
     { id: 'settings', label: 'Cài đặt & Sao lưu', icon: Settings },
   ];
 

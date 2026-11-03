@@ -267,7 +267,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         setStudentError('');
                       }}
                       disabled={lockCountdown > 0}
-                      placeholder="Ví dụ: 0130112015"
+                      placeholder="Ví dụ: 4129022015"
                       className="w-full pl-10 pr-4 py-3 bg-white border border-[#EDB5C1]/80 rounded-2xl text-sm font-bold text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] focus:border-[#EDB5C1] transition-all shadow-xs disabled:bg-gray-100 disabled:opacity-60"
                       autoFocus
                     />
@@ -284,7 +284,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     Các em nhập mật khẩu gồm 10 chữ số: <strong className="font-bold text-[#1E293B]">2 số mã học sinh + 2 số ngày sinh + 2 số tháng sinh + 4 số năm sinh</strong>.
                   </p>
                   <p className="text-[11.5px] text-gray-700 leading-relaxed font-normal">
-                    Học sinh số <strong className="font-bold text-gray-900">01</strong>, sinh ngày <strong className="font-bold text-gray-900">30/11/2015</strong> thì nhập: <span className="px-1.5 py-0.5 bg-white border border-[#EDB5C1] rounded-md font-black text-[#1E293B]">0130112015</span>.
+                    <span className="italic text-gray-500">(Ví dụ giả định)</span> Học sinh giả định có mã số <strong className="font-bold text-gray-900">41</strong>, sinh ngày <strong className="font-bold text-gray-900">29/02/2015</strong> thì nhập: <span className="px-1.5 py-0.5 bg-white border border-[#EDB5C1] rounded-md font-black text-[#1E293B]">4129022015</span>.
                   </p>
                 </div>
 
