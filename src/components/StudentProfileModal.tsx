@@ -28,6 +28,7 @@ import {
   Star,
   Edit2,
   History,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   calculateAverageGrade,
@@ -43,6 +44,7 @@ import {
   getEmulationConfigForClass,
   evaluateStudentEmulation,
 } from '../utils/emulationEvaluation';
+import { exportStudentViolationsToExcel } from '../utils/studentViolationExport';
 
 interface StudentProfileModalProps {
   studentId: string;
@@ -203,6 +205,57 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       activeEmulationConfig
     );
   }, [student.id, displayedDiscipline, activeEmulationConfig]);
+
+  // Export violation Excel report state & logic
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+  const periodBadgeLabel = useMemo(() => {
+    if (selectedPeriod === 'all') return 'Tất cả';
+    if (selectedPeriod === 'year') return 'Cả năm';
+    if (selectedPeriod === 'hk1') return 'HK1';
+    if (selectedPeriod === 'hk2') return 'HK2';
+    if (selectedPeriod.startsWith('20')) {
+      const parts = selectedPeriod.split('-');
+      return `T${parseInt(parts[1], 10)}/${parts[0].slice(2)}`;
+    }
+    return selectedPeriod;
+  }, [selectedPeriod]);
+
+  const handleExportViolationExcel = async () => {
+    if (!student) return;
+    try {
+      setIsExportingExcel(true);
+      const activePeriodOption = periodOptions.find((p) => p.id === selectedPeriod);
+      const periodLabel = activePeriodOption?.label || selectedPeriod;
+
+      const res = await exportStudentViolationsToExcel({
+        student,
+        className: state.config.className || '6A8',
+        schoolName: state.config.schoolName || 'Trường THCS Nguyễn Huệ',
+        schoolYear: state.config.schoolYear || '2026-2027',
+        teacherName: state.config.teacherName || 'Cô Lê Thị Kim Thanh',
+        selectedPeriod,
+        periodLabel,
+        records: displayedDiscipline,
+        basePoints: studentEmulation.initialPoints,
+        finalPoints: studentEmulation.finalTotalPoints,
+        suggestedRating: studentEmulation.suggestedRating,
+      });
+
+      if (res.success) {
+        onShowToast(
+          res.totalViolations > 0
+            ? `Đã xuất file Excel: ${res.fileName} (${res.totalViolations} lỗi vi phạm)`
+            : `Đã xuất file Excel: ${res.fileName} (Không có vi phạm)`
+        );
+      }
+    } catch (err: any) {
+      console.error('Lỗi xuất Excel vi phạm:', err);
+      onShowToast('Có lỗi xảy ra khi tạo tệp Excel vi phạm', 'error');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
 
   // Official conduct evaluation modal & form state (Teacher only)
   const [isOfficialModalOpen, setIsOfficialModalOpen] = useState(false);
@@ -847,22 +900,41 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 {/* 1. Thẻ Kỳ đánh giá (Tháng / Học kỳ / Cả năm), Điểm thi đua & Xếp loại gợi ý */}
                 <div className="bg-linear-to-r from-gray-50 via-[#FCF4F6] to-gray-50 rounded-2xl border border-gray-200/90 p-3.5 sm:p-4 flex flex-col gap-3 shrink-0 shadow-2xs">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
-                    {/* KỲ ĐÁNH GIÁ (DROPDOWN) */}
+                    {/* KỲ ĐÁNH GIÁ (DROPDOWN) & NÚT XUẤT EXCEL VI PHẠM (THEO MẪU 8A3) */}
                     <div className="space-y-1">
                       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        KỲ ĐÁNH GIÁ
+                        KỲ ĐÁNH GIÁ (THÁNG)
                       </label>
-                      <select
-                        value={selectedPeriod}
-                        onChange={(e) => setSelectedPeriod(e.target.value)}
-                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-bold text-gray-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] cursor-pointer"
-                      >
-                        {periodOptions.map((opt) => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <select
+                          value={selectedPeriod}
+                          onChange={(e) => setSelectedPeriod(e.target.value)}
+                          className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-bold text-gray-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] cursor-pointer shrink-0"
+                        >
+                          {periodOptions.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Nút “📗 Xuất Excel vi phạm” xuất hiện trong hồ sơ của TẤT CẢ học sinh */}
+                        <button
+                          type="button"
+                          onClick={handleExportViolationExcel}
+                          disabled={isExportingExcel}
+                          className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50 shrink-0"
+                          title="Tải tệp Excel tổng hợp vi phạm thi đua và kỷ luật của học sinh này"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                          <span className="whitespace-nowrap">
+                            {isExportingExcel ? 'Đang xuất...' : 'Xuất Excel vi phạm'}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-200/70 text-emerald-900 shrink-0">
+                            {periodBadgeLabel}
+                          </span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* ĐIỂM THI ĐUA CÒN LẠI */}
