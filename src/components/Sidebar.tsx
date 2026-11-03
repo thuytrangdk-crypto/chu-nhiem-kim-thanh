@@ -13,6 +13,7 @@ import {
   Grid3X3,
   User,
   GraduationCap,
+  ChevronDown,
 } from 'lucide-react';
 import { SyncStatus } from '../services/supabaseService';
 
@@ -114,62 +115,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Header Info Branding */}
-      <div className="p-4 border-b border-slate-800/80">
+      {/* Header Info Branding - Layout theo mẫu 8A3 với tông màu hồng 6A8 */}
+      <div className="p-4 border-b border-slate-800/80 space-y-2.5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[#EDB5C1] text-[#1E293B] flex items-center justify-center font-black shadow-md shadow-[#EDB5C1]/25">
-            {className || '6A8'}
+          {/* Biểu tượng mũ tốt nghiệp trong ô bo góc màu hồng #EDB5C1 */}
+          <div className="w-11 h-11 rounded-2xl bg-[#EDB5C1] text-[#1E293B] flex items-center justify-center font-black shadow-md shadow-[#EDB5C1]/20 border border-[#E5B2BD]/50 shrink-0">
+            <GraduationCap className="w-6 h-6 text-[#1E293B]" />
           </div>
-          <div className="min-w-0">
-            <h1 className="font-black text-sm tracking-tight text-white flex items-center gap-1.5">
-              <span>TRỢ LÝ CHỦ NHIỆM</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#EDB5C1]/20 text-[#EDB5C1] border border-[#EDB5C1]/30">
-                Lớp {className}
-              </span>
+
+          <div className="min-w-0 flex-1">
+            {/* Dòng 1: Tiêu đề TRỢ LÝ CHỦ NHIỆM */}
+            <h1 className="font-black text-sm tracking-tight text-white truncate">
+              TRỢ LÝ CHỦ NHIỆM
             </h1>
-            <p className="text-[11px] text-slate-400 truncate mt-0.5">
-              {isTeacher
-                ? schoolName || 'Trường THCS Chu Văn An'
-                : teacherName
-                ? `GVCN: ${teacherName}`
-                : 'Sổ chủ nhiệm điện tử'}
-            </p>
+
+            {/* Dòng 2: Nút bấm hình viên thuốc hiển thị tên lớp Lớp 6A8 ▾ */}
+            <button
+              type="button"
+              onClick={onOpenClassSwitch}
+              className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EDB5C1]/20 text-[#EDB5C1] hover:bg-[#EDB5C1]/30 border border-[#EDB5C1]/40 transition-colors cursor-pointer"
+              title="Đổi lớp hoặc năm học"
+            >
+              <span>Lớp {className || '6A8'}</span>
+              <ChevronDown className="w-3 h-3 text-[#EDB5C1]" />
+            </button>
           </div>
         </div>
 
-        {/* Supabase status badge */}
-        <div className="mt-3 px-2.5 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-[11px]">
-          <span className="text-slate-400">Supabase Cloud:</span>
-          <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            {syncStatus.isConnected ? 'Đã kết nối' : 'Đang kết nối'}
+        {/* Dòng 3: Tên giáo viên chủ nhiệm */}
+        <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium pl-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+          <span className="truncate">
+            GVCN: {teacherName || 'Cô Lê Thị Kim Thanh'}
           </span>
         </div>
-      </div>
 
-      {/* Role Pill Banner */}
-      <div className="px-4 pt-3 pb-1">
-        <div className="px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <div
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                isTeacher ? 'bg-amber-400' : 'bg-emerald-400'
-              }`}
-            />
-            <span className="font-semibold text-slate-300 truncate">
-              {isTeacher ? 'Giáo viên Chủ nhiệm' : `Học sinh: ${studentName || ''}`}
+        {/* Dòng 4: Khối trạng thái Supabase */}
+        <button
+          type="button"
+          onClick={onOpenSupabaseModal}
+          className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-xs text-slate-300 transition-colors cursor-pointer group"
+          title="Cấu hình kết nối Supabase Cloud"
+        >
+          <div className="flex items-center gap-2">
+            <Cloud className="w-3.5 h-3.5 text-[#EDB5C1]" />
+            <span className="text-[11px] font-medium text-slate-300">
+              Supabase: {syncStatus.isConnected ? 'Đã kết nối' : 'Chưa kết nối'}
             </span>
           </div>
-          {!isTeacher && (
+          <span
+            className={`w-2 h-2 rounded-full shrink-0 ${
+              syncStatus.isConnected
+                ? 'bg-emerald-400 ring-2 ring-emerald-400/20'
+                : 'bg-rose-400 ring-2 ring-rose-400/20'
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* Role Banner for Student when logged in */}
+      {!isTeacher && (
+        <div className="px-4 pt-2.5 pb-0.5">
+          <div className="px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+              <span className="font-semibold text-slate-300 truncate">
+                {studentName ? `Học sinh: ${studentName}` : 'Học sinh'}
+              </span>
+            </div>
             <button
               onClick={onOpenMyProfile}
               className="text-[11px] text-[#EDB5C1] hover:text-[#F8E2E7] font-bold shrink-0 ml-1 cursor-pointer"
             >
-              Xem hồ sơ
+              Hồ sơ
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
@@ -254,39 +276,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* Footer / Cloud & Logout */}
-      <div className="p-3 border-t border-slate-800/80 space-y-2">
-        <button
-          onClick={() => {
-            onOpenSupabaseModal();
-            onCloseMobile();
-          }}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-800/40 hover:bg-slate-800 text-xs text-slate-300 border border-slate-700/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Cloud className="w-4 h-4 text-indigo-400" />
-            <span>Supabase Cloud</span>
-          </div>
-          <span
-            className={`w-2 h-2 rounded-full ${
-              syncStatus.isTableReady
-                ? 'bg-emerald-400'
-                : syncStatus.isConnected
-                ? 'bg-amber-400'
-                : 'bg-slate-500'
-            }`}
-          />
-        </button>
+      {/* Footer: Vai trò bên trái & Nút Thoát bên phải (theo bố cục mẫu 8A3) */}
+      <div className="p-3.5 border-t border-slate-800/80 flex items-center justify-between">
+        <div className="min-w-0 pr-2">
+          <p className="text-xs font-bold text-slate-200 truncate">
+            {isTeacher ? 'Giáo viên' : (studentName || 'Học sinh')}
+          </p>
+          <p className="text-[11px] text-slate-400 truncate">
+            {isTeacher ? 'Quyền quản lý' : `Lớp ${className || '6A8'}`}
+          </p>
+        </div>
 
         <button
+          type="button"
           onClick={() => {
             onLogout();
             onCloseMobile();
           }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 transition-colors cursor-pointer shrink-0"
+          title="Đăng xuất khỏi hệ thống"
         >
-          <LogOut className="w-4 h-4" />
-          <span>Đăng xuất khỏi hệ thống</span>
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Thoát</span>
         </button>
       </div>
     </div>

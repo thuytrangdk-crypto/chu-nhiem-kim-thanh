@@ -68,6 +68,20 @@ export interface NoteRecord {
   author: string;
 }
 
+export interface NoticeVideo {
+  id: string;
+  url: string;
+  title?: string;
+  type?: 'youtube' | 'upload';
+}
+
+export interface NoticeLink {
+  id: string;
+  title: string;
+  url: string;
+  description?: string;
+}
+
 export interface BoardNotice {
   id: string;
   title: string;
@@ -76,6 +90,11 @@ export interface BoardNotice {
   priority: 'high' | 'normal' | 'info';
   pinned: boolean;
   author?: string;
+  category?: string; // 'Thông báo' | 'Khen thưởng' | 'Kế hoạch' | 'Nhắc nhở' | 'Khẩn'
+  images?: string[];
+  videos?: NoticeVideo[];
+  links?: NoticeLink[];
+  updatedAt?: string;
 }
 
 export interface ClassConfig {

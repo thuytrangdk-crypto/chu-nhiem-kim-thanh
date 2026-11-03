@@ -227,36 +227,36 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   };
 
   return (
-    <div className="space-y-5">
-      {/* 8A3-Style Single Unified Toolbar */}
-      <div className="bg-white rounded-2xl p-2.5 sm:p-3 border border-gray-200/90 shadow-2xs flex flex-wrap items-center gap-2 lg:gap-2.5">
-        {/* 1. Tìm kiếm học sinh */}
-        <div className="relative flex-1 min-w-[170px] sm:min-w-[200px] max-w-xs">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-            <Search className="w-4 h-4" />
+    <div className="space-y-3">
+      {/* 8A3-Style Single Unified Toolbar - Bố cục chuẩn trên 1 hàng ngang duy nhất */}
+      <div className="bg-white rounded-2xl p-2 sm:p-2.5 border border-gray-200/90 shadow-2xs flex items-center flex-nowrap overflow-x-auto no-scrollbar gap-1.5 xl:gap-2 w-full">
+        {/* 1. Ô tìm kiếm học sinh gọn gàng */}
+        <div className="relative w-36 sm:w-44 lg:w-48 xl:w-56 shrink-0">
+          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-400">
+            <Search className="w-3.5 h-3.5" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm kiếm học sinh..."
-            className="w-full h-10 pl-9 pr-7 bg-gray-50/80 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs sm:text-sm text-[#1E293B] placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/30 transition-all font-medium"
+            placeholder="Tìm kiếm..."
+            className="w-full h-9 pl-8 pr-6 bg-gray-50/80 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs text-[#1E293B] placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/30 transition-all font-medium"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>
 
-        {/* 2. Lọc giới tính */}
+        {/* 2. Bộ lọc giới tính */}
         <select
           value={genderFilter}
           onChange={(e) => setGenderFilter(e.target.value as any)}
-          className="h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#1E293B] focus:outline-hidden focus:border-[#EDB5C1] cursor-pointer shadow-2xs shrink-0"
+          className="h-9 px-2 sm:px-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-[#1E293B] focus:outline-hidden focus:border-[#EDB5C1] cursor-pointer shadow-2xs shrink-0"
         >
           <option value="all">Tất cả giới tính</option>
           <option value="Nam">Nam</option>
@@ -264,88 +264,88 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
         </select>
 
         {/* 3. Chuyển đổi dạng thẻ / danh sách */}
-        <div className="h-10 flex items-center border border-gray-200 rounded-xl p-0.5 bg-gray-50/80 shrink-0">
+        <div className="h-9 flex items-center border border-gray-200 rounded-xl p-0.5 bg-gray-50/80 shrink-0">
           <button
             type="button"
             onClick={() => setViewMode('cards')}
-            className={`h-full px-2.5 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+            className={`h-full px-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
               viewMode === 'cards'
                 ? 'bg-white shadow-xs text-[#1E293B] font-black'
                 : 'text-gray-400 hover:text-gray-600'
             }`}
             title="Dạng thẻ (5 học sinh / hàng)"
           >
-            <LayoutGrid className="w-4 h-4" />
+            <LayoutGrid className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
             onClick={() => setViewMode('table')}
-            className={`h-full px-2.5 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+            className={`h-full px-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
               viewMode === 'table'
                 ? 'bg-white shadow-xs text-[#1E293B] font-black'
                 : 'text-gray-400 hover:text-gray-600'
             }`}
             title="Dạng danh sách / bảng"
           >
-            <List className="w-4 h-4" />
+            <List className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* 4. Xuất Excel */}
+        {/* 4. Nút Xuất Excel */}
         <button
           type="button"
           onClick={handleExportCsv}
-          className="h-10 px-3.5 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
-          title="Xuất danh sách học sinh ra file Excel / CSV"
+          className="h-9 px-2.5 xl:px-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0 whitespace-nowrap"
+          title="Xuất danh sách học sinh ra file CSV / Excel"
         >
-          <Download className="w-4 h-4 text-emerald-700" />
+          <Download className="w-3.5 h-3.5 text-emerald-700" />
           <span>Xuất Excel</span>
         </button>
 
-        {/* 5. Xuất Excel thi đua */}
+        {/* 5. Nút Xuất Excel thi đua */}
         <button
           type="button"
           onClick={() => setIsEmulationExportOpen(true)}
-          className="h-10 px-3.5 rounded-xl border border-[#EDB5C1] bg-[#FCF4F6] hover:bg-[#F8E2E7] text-[#1E293B] text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+          className="h-9 px-2.5 xl:px-3 rounded-xl border border-[#EDB5C1] bg-[#FCF4F6] hover:bg-[#F8E2E7] text-[#1E293B] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0 whitespace-nowrap"
           title="Xuất file Excel gồm 2 sheet Tổng hợp và Chi tiết thi đua"
         >
-          <FileSpreadsheet className="w-4 h-4 text-[#1E293B]" />
+          <FileSpreadsheet className="w-3.5 h-3.5 text-[#1E293B]" />
           <span>Xuất Excel thi đua</span>
         </button>
 
-        {/* 6. Nhập Excel / CSV */}
+        {/* 6. Nút Nhập Excel */}
         {isTeacher && (
           <button
             type="button"
             onClick={() => setIsImportModalOpen(true)}
-            className="h-10 px-3.5 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+            className="h-9 px-2.5 xl:px-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0 whitespace-nowrap"
             title="Nhập danh sách học sinh từ file Excel hoặc CSV"
           >
-            <Upload className="w-4 h-4 text-emerald-700" />
+            <Upload className="w-3.5 h-3.5 text-emerald-700" />
             <span>Nhập Excel</span>
           </button>
         )}
 
-        {/* 7. Thêm học sinh */}
+        {/* 7. Nút + Thêm HS */}
         {isTeacher && (
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="h-10 px-4 rounded-xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-[#EDB5C1]/25 active:scale-95 shrink-0"
+            className="h-9 px-3 xl:px-3.5 rounded-xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 shrink-0 whitespace-nowrap"
             title="Thêm học sinh mới vào lớp 6A8"
           >
-            <UserPlus className="w-4 h-4 text-[#1E293B]" />
+            <UserPlus className="w-3.5 h-3.5 text-[#1E293B]" />
             <span>+ Thêm HS</span>
           </button>
         )}
 
-        {/* 8. Các chức năng quản trị khác (Làm sạch lớp / Xóa dữ liệu mẫu) */}
+        {/* 8. Nút Làm sạch lớp */}
         {isTeacher && (
           <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => setShowAdminMenu(!showAdminMenu)}
-              className="h-10 px-3 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              className="h-9 px-2.5 xl:px-3 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
               title="Quản trị dữ liệu & làm sạch"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
@@ -606,10 +606,10 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 {/* Warning indicator at top right if student has infractions or attendance alert */}
                 {infractionsCount > 0 && (
                   <div
-                    className="absolute top-2.5 right-2.5 w-5 h-5 rounded-md bg-rose-600 text-white flex items-center justify-center text-[10px] font-black shadow-xs"
+                    className="absolute top-2 right-2 w-5 h-5 rounded-md bg-rose-600 text-white flex items-center justify-center shadow-xs"
                     title={`${infractionsCount} lần vi phạm nề nếp`}
                   >
-                    !
+                    <AlertTriangle className="w-3.5 h-3.5 fill-white text-rose-600" />
                   </div>
                 )}
 

@@ -26,7 +26,7 @@ import { SupabaseModal } from './components/SupabaseModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { QuickEditSchoolModal } from './components/QuickEditSchoolModal';
 import { supabaseService, SyncStatus } from './services/supabaseService';
-import { CheckCircle2, AlertCircle, User } from 'lucide-react';
+import { CheckCircle2, AlertCircle, User, Menu, GraduationCap } from 'lucide-react';
 
 const STORAGE_KEY = 'so_chu_nhiem_8a3_data';
 const SESSION_AUTH_KEY = 'scn_session_auth';
@@ -863,18 +863,41 @@ export default function App() {
       ...notice,
       id: generateId(),
     };
-    setState((prev) => ({
-      ...prev,
-      boardNotices: [...prev.boardNotices, newNotice],
-    }));
+    setState((prev) => {
+      const nextState: AppState = {
+        ...prev,
+        boardNotices: [...prev.boardNotices, newNotice],
+      };
+      persistStateImmediately(nextState);
+      return nextState;
+    });
     showToast('Đã đăng thông báo mới lên bảng tin');
   };
 
+  const handleUpdateNotice = (updatedNotice: BoardNotice) => {
+    setState((prev) => {
+      const nextNotices = prev.boardNotices.map((n) =>
+        n.id === updatedNotice.id ? updatedNotice : n
+      );
+      const nextState: AppState = {
+        ...prev,
+        boardNotices: nextNotices,
+      };
+      persistStateImmediately(nextState);
+      return nextState;
+    });
+    showToast('Đã cập nhật thông báo thành công');
+  };
+
   const handleDeleteNotice = (noticeId: string) => {
-    setState((prev) => ({
-      ...prev,
-      boardNotices: prev.boardNotices.filter((n) => n.id !== noticeId),
-    }));
+    setState((prev) => {
+      const nextState: AppState = {
+        ...prev,
+        boardNotices: prev.boardNotices.filter((n) => n.id !== noticeId),
+      };
+      persistStateImmediately(nextState);
+      return nextState;
+    });
     showToast('Đã xóa thông báo');
   };
 
@@ -1034,28 +1057,44 @@ export default function App() {
           />
 
           <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-            <Header
-              title={pageTitles[currentView] || 'Trợ lý chủ nhiệm'}
-              className={state.config.className}
-              schoolName={state.config.schoolName}
-              schoolYear={state.config.schoolYear}
-              teacherName={state.config.teacherName}
-              isTeacher={authRole === 'teacher'}
-              studentName={state.students.find((s) => s.id === authStudentId)?.name}
-              syncStatus={syncStatus}
-              onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
-              onOpenClassSwitch={() => setIsClassSwitchOpen(true)}
-              onGoHome={() => setCurrentView(authRole === 'teacher' ? 'dashboard' : 'board')}
-              onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
-              onOpenChangePassword={() => setIsTeacherPasswordModalOpen(true)}
-              onOpenMyProfile={() => {
-                if (authStudentId) setSelectedStudentId(authStudentId);
-              }}
-              onOpenQuickEditSchool={() => setIsQuickEditSchoolOpen(true)}
-              onLogout={handleLogout}
-            />
+            {/* Mobile Header Bar (Chỉ hiển thị trên điện thoại di động - màn hình desktop ẩn hoàn toàn theo mẫu 8A3) */}
+            <div className="lg:hidden flex items-center justify-between px-3.5 py-2.5 bg-white border-b border-[#E5B2BD]/60 shrink-0 shadow-2xs z-20">
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  className="p-2 rounded-xl text-[#1E293B] hover:bg-[#EDB5C1]/20 active:scale-95 transition-all cursor-pointer"
+                  aria-label="Mở menu điều hướng"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-[#EDB5C1] text-[#1E293B] flex items-center justify-center font-black shadow-2xs">
+                    <GraduationCap className="w-4 h-4 text-[#1E293B]" />
+                  </div>
+                  <div>
+                    <h2 className="text-xs font-black text-[#1E293B] leading-tight">
+                      TRỢ LÝ CHỦ NHIỆM
+                    </h2>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      Lớp {state.config.className || '6A8'}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-            <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8 bg-[#FCF4F6] custom-scrollbar">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsClassSwitchOpen(true)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EDB5C1]/20 text-[#1E293B] border border-[#EDB5C1]/40 hover:bg-[#EDB5C1]/30 transition-colors cursor-pointer"
+                >
+                  {state.config.className || '6A8'} ▾
+                </button>
+              </div>
+            </div>
+
+            <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-5 bg-[#FCF4F6] custom-scrollbar">
               {/* TOP PASTEL PINK HERO BANNER FOR STUDENT (#EDB5C1, CHỮ XANH ĐEN #1E293B) */}
               {authRole === 'student' && authStudentId && (() => {
                 const currentStudent = state.students.find((s) => s.id === authStudentId);
@@ -1136,6 +1175,7 @@ export default function App() {
                 <BoardView
                   state={state}
                   onAddNotice={handleAddNotice}
+                  onUpdateNotice={handleUpdateNotice}
                   onDeleteNotice={handleDeleteNotice}
                   onUpdateSeatingChart={handleUpdateSeatingChart}
                   onSelectStudent={(id) => {
