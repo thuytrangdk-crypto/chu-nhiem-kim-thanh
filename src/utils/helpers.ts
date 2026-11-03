@@ -224,6 +224,121 @@ export function findStudentsByAccountOrDob(query: string, students: Student[]): 
   });
 }
 
+export function extractDobDigitsFromStudent(student: Student): string {
+  if (!student.dob) return '';
+  const str = student.dob.trim();
+  let day = '';
+  let month = '';
+  let year = '';
+
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        year = parts[0];
+        month = parts[1].padStart(2, '0');
+        day = parts[2].padStart(2, '0');
+      } else {
+        // DD-MM-YYYY
+        day = parts[0].padStart(2, '0');
+        month = parts[1].padStart(2, '0');
+        year = parts[2];
+      }
+    }
+  } else if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      day = parts[0].padStart(2, '0');
+      month = parts[1].padStart(2, '0');
+      year = parts[2];
+    }
+  } else {
+    const digits = str.replace(/\D/g, '');
+    if (digits.length === 8) {
+      day = digits.substring(0, 2);
+      month = digits.substring(2, 4);
+      year = digits.substring(4, 8);
+    }
+  }
+
+  if (day && month && year) {
+    return `${day}${month}${year}`;
+  }
+  return str.replace(/\D/g, '');
+}
+
+export interface StudentAuthResult {
+  success: boolean;
+  student?: Student;
+  errorMessage?: string;
+  isAmbiguous?: boolean;
+}
+
+export function authenticateStudentByPassword(
+  rawInput: string,
+  students: Student[]
+): StudentAuthResult {
+  const trimmed = (rawInput || '').trim();
+  if (!trimmed) {
+    return {
+      success: false,
+      errorMessage: 'Vui lòng nhập mật khẩu học sinh (ngày sinh dạng ddmmyyyy hoặc MSddmmyyyy).',
+    };
+  }
+
+  const upper = trimmed.toUpperCase();
+  const withoutMs = upper.startsWith('MS') ? trimmed.substring(2).trim() : trimmed;
+  const digitsOnly = trimmed.replace(/\D/g, '');
+
+  // 1. Kiểm tra mật khẩu riêng / mã kích hoạt bí mật do GVCN cấp
+  const customPassMatches = students.filter(
+    (s) => s.password && (s.password.trim() === trimmed || s.password.trim() === withoutMs)
+  );
+  if (customPassMatches.length === 1) {
+    return { success: true, student: customPassMatches[0] };
+  }
+
+  // 2. So khớp theo ngày sinh dạng MSddmmyyyy, ddmmyyyy, hoặc dd/mm/yyyy
+  const dobMatches: Student[] = [];
+  for (const s of students) {
+    const dobDigits = extractDobDigitsFromStudent(s);
+    if (!dobDigits) continue;
+
+    const msFormat = `MS${dobDigits}`;
+    const slashFormat = `${dobDigits.substring(0, 2)}/${dobDigits.substring(2, 4)}/${dobDigits.substring(4)}`;
+
+    if (
+      upper === msFormat ||
+      trimmed === dobDigits ||
+      trimmed === slashFormat ||
+      (digitsOnly.length === 8 && digitsOnly === dobDigits) ||
+      (s.id && (upper === s.id.toUpperCase() || upper === `MS${s.id}`.toUpperCase() || trimmed === s.id))
+    ) {
+      dobMatches.push(s);
+    }
+  }
+
+  if (dobMatches.length === 1) {
+    return { success: true, student: dobMatches[0] };
+  }
+
+  if (dobMatches.length > 1) {
+    return {
+      success: false,
+      isAmbiguous: true,
+      errorMessage:
+        'Ngày sinh này trùng với bạn khác trong lớp. Vui lòng nhập Mật khẩu riêng hoặc Mã bảo mật do GVCN cấp để đăng nhập an toàn vào hồ sơ của em.',
+    };
+  }
+
+  return {
+    success: false,
+    errorMessage:
+      'Mật khẩu không chính xác! Vui lòng nhập đúng 8 chữ số ngày tháng năm sinh (ví dụ: 05082012 hoặc MS05082012, giữ nguyên số 0 ở đầu).',
+  };
+}
+
 export function checkStudentPassword(inputPass: string, student: Student): boolean {
   const trimmed = (inputPass || '').trim();
   if (!trimmed) {

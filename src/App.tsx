@@ -26,7 +26,7 @@ import { SupabaseModal } from './components/SupabaseModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { QuickEditSchoolModal } from './components/QuickEditSchoolModal';
 import { supabaseService, SyncStatus } from './services/supabaseService';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, User } from 'lucide-react';
 
 const STORAGE_KEY = 'so_chu_nhiem_8a3_data';
 const SESSION_AUTH_KEY = 'scn_session_auth';
@@ -147,8 +147,27 @@ export default function App() {
     return null;
   });
 
-  const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [currentView, setCurrentView] = useState<string>(() => {
+    try {
+      const session = sessionStorage.getItem(SESSION_AUTH_KEY);
+      if (session) {
+        const parsed = JSON.parse(session);
+        if (parsed.role === 'student') return 'board';
+      }
+    } catch (e) {}
+    return 'dashboard';
+  });
+  const [activeBoardTab, setActiveBoardTab] = useState<'notices' | 'seating' | 'honor'>('notices');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+  // Enforce student view restriction: students can only access 'board' (with subtabs) and own profile modal
+  useEffect(() => {
+    if (authRole === 'student') {
+      if (currentView !== 'board') {
+        setCurrentView('board');
+      }
+    }
+  }, [authRole, currentView]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isClassSwitchOpen, setIsClassSwitchOpen] = useState(false);
   const [isQuickEditSchoolOpen, setIsQuickEditSchoolOpen] = useState(false);
@@ -441,7 +460,9 @@ export default function App() {
   const handleLoginStudent = (studentId: string) => {
     setAuthRole('student');
     setAuthStudentId(studentId);
-    setSelectedStudentId(studentId);
+    setSelectedStudentId(null);
+    setCurrentView('board');
+    setActiveBoardTab('notices');
     sessionStorage.setItem(
       SESSION_AUTH_KEY,
       JSON.stringify({ role: 'student', id: studentId })
@@ -994,6 +1015,7 @@ export default function App() {
             classAvatar={state.config.classAvatar}
             isTeacher={authRole === 'teacher'}
             studentName={state.students.find((s) => s.id === authStudentId)?.name}
+            teacherName={state.config.teacherName}
             onUpdateClassAvatar={(base64) =>
               handleUpdateConfig({ classAvatar: base64 })
             }
@@ -1007,6 +1029,8 @@ export default function App() {
               if (authStudentId) setSelectedStudentId(authStudentId);
             }}
             syncStatus={syncStatus}
+            activeBoardTab={activeBoardTab}
+            onSelectBoardTab={setActiveBoardTab}
           />
 
           <div className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -1021,7 +1045,7 @@ export default function App() {
               syncStatus={syncStatus}
               onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
               onOpenClassSwitch={() => setIsClassSwitchOpen(true)}
-              onGoHome={() => setCurrentView('dashboard')}
+              onGoHome={() => setCurrentView(authRole === 'teacher' ? 'dashboard' : 'board')}
               onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
               onOpenChangePassword={() => setIsTeacherPasswordModalOpen(true)}
               onOpenMyProfile={() => {
@@ -1032,65 +1056,82 @@ export default function App() {
             />
 
             <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8 bg-[#fff8fa] custom-scrollbar">
-              {currentView === 'dashboard' && (
+              {/* TOP PINK HERO BANNER FOR STUDENT (THEO MẪU 8A3 ẢNH 5, TONE HỒNG 6A8) */}
+              {authRole === 'student' && authStudentId && (() => {
+                const currentStudent = state.students.find((s) => s.id === authStudentId);
+                if (!currentStudent) return null;
+                return (
+                  <div className="bg-linear-to-r from-pink-600 via-rose-600 to-pink-700 text-white rounded-3xl p-5 sm:p-6 mb-5 shadow-lg shadow-pink-600/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-xs ring-2 ring-white/30 flex items-center justify-center font-black text-xl sm:text-2xl text-white shadow-md shrink-0">
+                        {currentStudent.name.charAt(currentStudent.name.lastIndexOf(' ') + 1) || currentStudent.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold text-white mb-1">
+                          <span>Học sinh Lớp {state.config.className || '6A8'}</span>
+                          <span>•</span>
+                          <span>Năm học {state.config.schoolYear || '2026-2027'}</span>
+                        </div>
+                        <h2 className="text-base sm:text-2xl font-black uppercase tracking-tight text-white truncate">
+                          {currentStudent.name}
+                        </h2>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedStudentId(currentStudent.id)}
+                      className="px-5 py-2.5 rounded-2xl bg-white hover:bg-pink-50 text-pink-700 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
+                    >
+                      <User className="w-4 h-4 text-pink-600" />
+                      <span>Xem Hồ sơ của tôi</span>
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {/* TEACHER-ONLY VIEWS */}
+              {authRole === 'teacher' && currentView === 'dashboard' && (
                 <DashboardView
                   state={state}
-                  isTeacher={authRole === 'teacher'}
-                  currentStudentId={authStudentId}
-                  onSelectStudent={(id) => {
-                    if (authRole === 'teacher' || id === authStudentId) {
-                      setSelectedStudentId(id);
-                    } else {
-                      showToast('Bảo mật: Bạn chỉ có thể xem hồ sơ của chính mình!', 'error');
-                    }
-                  }}
+                  isTeacher={true}
+                  currentStudentId={null}
+                  onSelectStudent={(id) => setSelectedStudentId(id)}
                   onNavigate={(view) => setCurrentView(view)}
                   onShowToast={showToast}
                   onOpenQuickEditSchool={() => setIsQuickEditSchoolOpen(true)}
                 />
               )}
 
-              {currentView === 'students' && (
+              {authRole === 'teacher' && currentView === 'students' && (
                 <StudentsView
                   state={state}
-                  onSelectStudent={(id) => {
-                    if (authRole === 'teacher' || id === authStudentId) {
-                      setSelectedStudentId(id);
-                    } else {
-                      showToast('Bảo mật: Bạn chỉ có quyền xem chi tiết hồ sơ của chính mình!', 'error');
-                    }
-                  }}
+                  onSelectStudent={(id) => setSelectedStudentId(id)}
                   onAddStudent={handleAddStudent}
                   onUpdateStudent={handleUpdateStudent}
                   onDeleteStudent={handleDeleteStudent}
                   onBatchImportStudents={handleBatchImportStudents}
                   onRemoveSampleStudents={handleRemoveSampleStudents}
                   onClearAllStudents={handleClearAllStudents}
-                  isTeacher={authRole === 'teacher'}
-                  currentStudentId={authStudentId}
+                  isTeacher={true}
+                  currentStudentId={null}
                   onShowToast={showToast}
                 />
               )}
 
-              {currentView === 'attendance' && (
+              {authRole === 'teacher' && currentView === 'attendance' && (
                 <AttendanceView
                   state={state}
                   onUpdateAttendanceStatus={handleUpdateAttendanceStatus}
                   onMarkAllPresent={handleMarkAllPresent}
                   onSaveNotice={() => showToast('Đã lưu dữ liệu điểm danh')}
-                  onSelectStudent={(id) => {
-                    if (authRole === 'teacher' || id === authStudentId) {
-                      setSelectedStudentId(id);
-                    } else {
-                      showToast('Bảo mật: Bạn chỉ có thể xem hồ sơ của chính mình!', 'error');
-                    }
-                  }}
-                  isTeacher={authRole === 'teacher'}
-                  currentStudentId={authStudentId}
+                  onSelectStudent={(id) => setSelectedStudentId(id)}
+                  isTeacher={true}
+                  currentStudentId={null}
                   onShowToast={showToast}
                 />
               )}
 
+              {/* SHARED BOARD VIEW (STUDENT ACCEPTS ONLY READ-ONLY, HIGHLIGHTS DESK) */}
               {currentView === 'board' && (
                 <BoardView
                   state={state}
@@ -1105,6 +1146,9 @@ export default function App() {
                     }
                   }}
                   isTeacher={authRole === 'teacher'}
+                  authStudentId={authStudentId}
+                  activeTab={activeBoardTab}
+                  onTabChange={setActiveBoardTab}
                   onShowToast={showToast}
                 />
               )}
