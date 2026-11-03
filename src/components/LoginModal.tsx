@@ -86,7 +86,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     const trimmed = studentPassword.trim();
     if (!trimmed) {
-      setStudentError('Vui lòng nhập mật khẩu học sinh (ngày sinh dạng ddmmyyyy hoặc MSddmmyyyy).');
+      setStudentError('Vui lòng nhập mật khẩu học sinh gồm 10 chữ số.');
+      return;
+    }
+
+    if (!/^\d+$/.test(trimmed)) {
+      setStudentError('Mật khẩu chỉ bao gồm 10 chữ số (2 số mã HS + 8 số ngày sinh). Không chứa ký tự chữ cái hay tiền tố MS.');
+      return;
+    }
+
+    if (trimmed.length !== 10) {
+      setStudentError('Mật khẩu phải gồm đúng 10 chữ số: 2 số mã HS + 2 số ngày + 2 số tháng + 4 số năm sinh (Ví dụ: 0130112015).');
       return;
     }
 
@@ -103,8 +113,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         setStudentError('Bạn đã nhập sai 5 lần liên tiếp. Hệ thống tạm khóa 30 giây để bảo mật.');
       } else {
         setStudentError(
-          authRes.errorMessage ||
-            'Mật khẩu không chính xác! Vui lòng nhập đúng 8 chữ số ngày sinh dạng ddmmyyyy hoặc MSddmmyyyy.'
+          authRes.errorMessage || 'Thông tin đăng nhập không chính xác'
         );
       }
     }
@@ -226,21 +235,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </button>
             </form>
           ) : (
-            /* TAB HỌC SINH (Theo đúng mẫu 8A3 nhưng giữ màu hồng 6A8, duy nhất 1 ô mật khẩu) */
+            /* TAB HỌC SINH (Công thức 10 chữ số: MMDDMMYYYY) */
             <div className="space-y-4">
               <div className="text-center space-y-1">
                 <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
                   Chào mừng các em học sinh!
                 </h3>
                 <p className="text-xs text-gray-500 font-medium">
-                  Nhập ngày sinh dạng ddmmyyyy để vào lớp
+                  Nhập mật khẩu 10 chữ số để vào lớp
                 </p>
               </div>
 
               <form onSubmit={handleStudentSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
-                    <span>Mật khẩu học sinh (Ngày tháng năm sinh)</span>
+                    <span>Mật khẩu học sinh (Mã số + Ngày sinh)</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -248,29 +257,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </div>
                     <input
                       type="text"
-                      inputMode="text"
+                      inputMode="numeric"
                       autoComplete="off"
+                      maxLength={10}
                       value={studentPassword}
                       onChange={(e) => {
+                        // Lưu mật khẩu dưới dạng chuỗi string, giữ nguyên các số 0 ở đầu
                         setStudentPassword(e.target.value);
                         setStudentError('');
                       }}
                       disabled={lockCountdown > 0}
-                      placeholder="Ví dụ: 05082012 hoặc 15052012"
+                      placeholder="Ví dụ: 0130112015"
                       className="w-full pl-10 pr-4 py-3 bg-white border border-pink-200/90 rounded-2xl text-sm font-bold text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-all shadow-xs disabled:bg-gray-100 disabled:opacity-60"
                       autoFocus
                     />
                   </div>
                 </div>
 
-                {/* Hộp hướng dẫn nhập màu hồng nhẹ nhàng như mẫu 8A3 */}
-                <div className="p-3.5 bg-pink-50/70 border border-pink-200/80 rounded-2xl text-xs text-pink-950 space-y-1">
+                {/* Hộp hướng dẫn nhập theo đúng yêu cầu đề bài */}
+                <div className="p-3.5 bg-pink-50/70 border border-pink-200/80 rounded-2xl text-xs text-pink-950 space-y-1.5">
                   <div className="font-bold flex items-center gap-1.5 text-pink-900">
                     <HelpCircle className="w-4 h-4 text-pink-600 shrink-0" />
                     <span>Cách nhập mật khẩu học sinh:</span>
                   </div>
                   <p className="text-[11.5px] text-gray-700 leading-relaxed font-normal">
-                    Nhập 8 chữ số ngày tháng năm sinh dạng <strong className="font-bold text-pink-900">ddmmyyyy</strong>. Ví dụ sinh ngày <strong className="font-bold text-gray-900">05/08/2012</strong> thì nhập <span className="px-1.5 py-0.5 bg-white border border-pink-300 rounded-md font-black text-pink-700">05082012</span> (hoặc có tiền tố <span className="px-1.5 py-0.5 bg-white border border-pink-300 rounded-md font-black text-pink-700">MS05082012</span>, giữ nguyên số 0 ở đầu).
+                    Các em nhập mật khẩu gồm 10 chữ số: <strong className="font-bold text-pink-900">2 số mã học sinh + 2 số ngày sinh + 2 số tháng sinh + 4 số năm sinh</strong>.
+                  </p>
+                  <p className="text-[11.5px] text-gray-700 leading-relaxed font-normal">
+                    Học sinh số <strong className="font-bold text-gray-900">01</strong>, sinh ngày <strong className="font-bold text-gray-900">30/11/2015</strong> thì nhập: <span className="px-1.5 py-0.5 bg-white border border-pink-300 rounded-md font-black text-pink-700">0130112015</span>.
                   </p>
                 </div>
 

@@ -275,67 +275,137 @@ export interface StudentAuthResult {
   isAmbiguous?: boolean;
 }
 
+/**
+ * Lấy mã số thứ tự học sinh gồm 2 chữ số (01, 02, 03, ..., 40)
+ * Mã số học sinh là mã ổn định của từng em trong lớp, không phụ thuộc vào thứ tự lọc/sắp xếp bảng.
+ */
+export function getStudentTwoDigitCode(student: Student, allStudents?: Student[]): string | null {
+  if (!student) return null;
+  const rawId = (student.id || '').trim();
+
+  // 1. Nếu id là 2 chữ số (ví dụ: "01", "15")
+  if (/^\d{2}$/.test(rawId)) {
+    return rawId;
+  }
+
+  // 2. Nếu id là 1 chữ số (ví dụ: "1", "9") -> thêm số 0 ở đầu: "01", "09"
+  if (/^\d{1}$/.test(rawId)) {
+    return rawId.padStart(2, '0');
+  }
+
+  // 3. Nếu id có tiền tố như HS01, MS01, S01, HS15
+  const prefixMatch = rawId.match(/^(?:HS|MS|S)?0*(\d{1,2})$/i);
+  if (prefixMatch && prefixMatch[1]) {
+    return prefixMatch[1].padStart(2, '0');
+  }
+
+  // 4. Nếu id kết thúc bằng 1 hoặc 2 chữ số (ví dụ: "HS-01", "HS_15")
+  const digitsMatch = rawId.match(/(\d{1,2})$/);
+  if (digitsMatch && digitsMatch[1]) {
+    return digitsMatch[1].padStart(2, '0');
+  }
+
+  // 5. Nếu có danh sách lớp gốc (unfiltered canonical list) và student có vị trí cố định
+  if (allStudents && Array.isArray(allStudents)) {
+    const idx = allStudents.findIndex((s) => s.id === student.id);
+    if (idx !== -1 && idx < 99) {
+      return String(idx + 1).padStart(2, '0');
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Xác thực đăng nhập học sinh theo quy tắc 10 chữ số MMDDMMYYYY:
+ * - 2 chữ số đầu (MM): Mã số thứ tự học sinh (01, 02, 03, ..., 15, ...)
+ * - 2 chữ số tiếp theo (DD): Ngày sinh (01 - 31)
+ * - 2 chữ số tiếp theo (MM): Tháng sinh (01 - 12)
+ * - 4 chữ số cuối (YYYY): Năm sinh đầy đủ
+ * Ví dụ: Mã 01 sinh ngày 30/11/2015 -> Mật khẩu: 0130112015
+ */
 export function authenticateStudentByPassword(
   rawInput: string,
   students: Student[]
 ): StudentAuthResult {
   const trimmed = (rawInput || '').trim();
+
   if (!trimmed) {
     return {
       success: false,
-      errorMessage: 'Vui lòng nhập mật khẩu học sinh (ngày sinh dạng ddmmyyyy hoặc MSddmmyyyy).',
+      errorMessage: 'Vui lòng nhập mật khẩu học sinh gồm 10 chữ số.',
     };
   }
 
-  const upper = trimmed.toUpperCase();
-  const withoutMs = upper.startsWith('MS') ? trimmed.substring(2).trim() : trimmed;
-  const digitsOnly = trimmed.replace(/\D/g, '');
-
-  // 1. Kiểm tra mật khẩu riêng / mã kích hoạt bí mật do GVCN cấp
-  const customPassMatches = students.filter(
-    (s) => s.password && (s.password.trim() === trimmed || s.password.trim() === withoutMs)
-  );
-  if (customPassMatches.length === 1) {
-    return { success: true, student: customPassMatches[0] };
+  // Kiểm tra không chứa ký tự chữ cái hay tiền tố MS
+  if (!/^\d+$/.test(trimmed)) {
+    return {
+      success: false,
+      errorMessage:
+        'Mật khẩu chỉ bao gồm 10 chữ số (2 số mã HS + 8 số ngày sinh). Không chứa ký tự chữ cái hay tiền tố MS.',
+    };
   }
 
-  // 2. So khớp theo ngày sinh dạng MSddmmyyyy, ddmmyyyy, hoặc dd/mm/yyyy
-  const dobMatches: Student[] = [];
-  for (const s of students) {
-    const dobDigits = extractDobDigitsFromStudent(s);
-    if (!dobDigits) continue;
-
-    const msFormat = `MS${dobDigits}`;
-    const slashFormat = `${dobDigits.substring(0, 2)}/${dobDigits.substring(2, 4)}/${dobDigits.substring(4)}`;
-
-    if (
-      upper === msFormat ||
-      trimmed === dobDigits ||
-      trimmed === slashFormat ||
-      (digitsOnly.length === 8 && digitsOnly === dobDigits) ||
-      (s.id && (upper === s.id.toUpperCase() || upper === `MS${s.id}`.toUpperCase() || trimmed === s.id))
-    ) {
-      dobMatches.push(s);
-    }
+  // Kiểm tra độ dài đúng 10 chữ số
+  if (trimmed.length !== 10) {
+    return {
+      success: false,
+      errorMessage:
+        'Mật khẩu phải gồm đúng 10 chữ số: 2 số mã HS + 2 số ngày + 2 số tháng + 4 số năm sinh (Ví dụ: 0130112015).',
+    };
   }
 
-  if (dobMatches.length === 1) {
-    return { success: true, student: dobMatches[0] };
-  }
+  // 1. Tách 2 chữ số đầu làm mã số học sinh và 8 chữ số ngày sinh
+  const studentCode = trimmed.substring(0, 2);
+  const enteredDob = trimmed.substring(2);
 
-  if (dobMatches.length > 1) {
+  // 2. Tìm học sinh theo mã số 2 chữ số trong danh sách lớp
+  const matchingStudents = students.filter((s) => {
+    const code = getStudentTwoDigitCode(s, students);
+    return code === studentCode;
+  });
+
+  // Báo nếu có mã trùng trong danh sách lớp
+  if (matchingStudents.length > 1) {
     return {
       success: false,
       isAmbiguous: true,
-      errorMessage:
-        'Ngày sinh này trùng với bạn khác trong lớp. Vui lòng nhập Mật khẩu riêng hoặc Mã bảo mật do GVCN cấp để đăng nhập an toàn vào hồ sơ của em.',
+      errorMessage: `Phát hiện có ${matchingStudents.length} học sinh trùng mã số ${studentCode} trong danh sách lớp. Vui lòng báo Giáo viên chủ nhiệm kiểm tra lại mã số.`,
     };
   }
 
+  // Không tìm thấy học sinh có mã số tương ứng
+  if (matchingStudents.length === 0) {
+    return {
+      success: false,
+      errorMessage: 'Thông tin đăng nhập không chính xác',
+    };
+  }
+
+  const targetStudent = matchingStudents[0];
+
+  // 3. Đối chiếu với ngày, tháng, năm sinh đã lưu của học sinh đó
+  const targetDobDigits = extractDobDigitsFromStudent(targetStudent);
+
+  if (enteredDob === targetDobDigits) {
+    return {
+      success: true,
+      student: targetStudent,
+    };
+  }
+
+  // Kiểm tra nếu giáo viên đã gán mật khẩu riêng đặc biệt đúng bằng chuỗi 10 số này
+  if (targetStudent.password && targetStudent.password.trim() === trimmed) {
+    return {
+      success: true,
+      student: targetStudent,
+    };
+  }
+
+  // Từ chối đăng nhập và hiển thị thông báo chung an toàn, không tiết lộ ngày sinh
   return {
     success: false,
-    errorMessage:
-      'Mật khẩu không chính xác! Vui lòng nhập đúng 8 chữ số ngày tháng năm sinh (ví dụ: 05082012 hoặc MS05082012, giữ nguyên số 0 ở đầu).',
+    errorMessage: 'Thông tin đăng nhập không chính xác',
   };
 }
 
