@@ -215,10 +215,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-pink-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E5B2BD] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-linear-to-tr from-pink-500 to-rose-500 flex items-center justify-center text-white shadow-sm shadow-pink-500/20">
+            <div className="w-9 h-9 rounded-2xl bg-[#EDB5C1] flex items-center justify-center text-[#1E293B] shadow-sm shadow-[#EDB5C1]/25">
               <Settings className="w-5 h-5" />
             </div>
             <span>Cài Đặt Hệ Thống</span>
@@ -240,7 +240,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </button>
             <button
               onClick={handleOpenAddRule}
-              className="px-4 py-2 rounded-xl bg-linear-to-r from-pink-600 via-rose-600 to-pink-600 hover:from-pink-700 hover:to-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-pink-500/20 active:scale-95"
+              className="px-4 py-2 rounded-xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#EDB5C1]/20 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>Thêm quy tắc mới</span>
@@ -252,7 +252,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* Main Layout: Left Sub-navigation + Right Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Left Sub-Navigation Sidebar */}
-        <div className="lg:col-span-1 bg-white rounded-3xl p-3 sm:p-4 border border-pink-200/80 shadow-xs space-y-1.5">
+        <div className="lg:col-span-1 bg-white rounded-3xl p-3 sm:p-4 border border-[#E5B2BD] shadow-xs space-y-1.5">
           <div className="px-3 py-2 text-[11px] font-black uppercase tracking-wider text-gray-400">
             Danh Mục Cài Đặt
           </div>
@@ -262,13 +262,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             onClick={() => setActiveTab('general')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left transition-all cursor-pointer font-bold text-xs sm:text-sm ${
               activeTab === 'general'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/25 ring-1 ring-pink-500'
-                : 'text-gray-700 hover:bg-pink-50/60 hover:text-pink-700'
+                ? 'bg-[#EDB5C1] text-[#1E293B] font-black shadow-md shadow-[#EDB5C1]/25 border border-[#E5B2BD]'
+                : 'text-gray-700 hover:bg-[#FCF4F6] hover:text-[#1E293B]'
             }`}
           >
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                activeTab === 'general' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                activeTab === 'general' ? 'bg-white/40 text-[#1E293B]' : 'bg-gray-100 text-gray-600'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -277,7 +277,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="font-bold">Cài đặt chung</div>
               <div
                 className={`text-[11px] font-medium truncate ${
-                  activeTab === 'general' ? 'text-pink-100' : 'text-gray-400'
+                  activeTab === 'general' ? 'text-slate-800' : 'text-gray-400'
                 }`}
               >
                 Thông tin trường, lớp, GVCN
@@ -285,18 +285,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </button>
 
-          {/* 2. Quy tắc thi đua (Scale) - ACTIVE ITEM NHƯ HÌNH MẪU */}
+          {/* 2. Quy tắc thi đua (Scale) - ACTIVE ITEM */}
           <button
             onClick={() => setActiveTab('rules')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left transition-all cursor-pointer font-bold text-xs sm:text-sm ${
               activeTab === 'rules'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/25 ring-1 ring-pink-500'
-                : 'text-gray-700 hover:bg-pink-50/60 hover:text-pink-700'
+                ? 'bg-[#EDB5C1] text-[#1E293B] font-black shadow-md shadow-[#EDB5C1]/25 border border-[#E5B2BD]'
+                : 'text-gray-700 hover:bg-[#FCF4F6] hover:text-[#1E293B]'
             }`}
           >
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                activeTab === 'rules' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                activeTab === 'rules' ? 'bg-white/40 text-[#1E293B]' : 'bg-gray-100 text-gray-600'
               }`}
             >
               <Scale className="w-4 h-4" />
@@ -305,10 +305,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="flex items-center justify-between">
                 <span className="font-bold">Quy tắc thi đua</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
                     activeTab === 'rules'
-                      ? 'bg-white/25 text-white'
-                      : 'bg-pink-100 text-pink-700'
+                      ? 'bg-white/50 text-[#1E293B]'
+                      : 'bg-[#FCF4F6] text-[#1E293B] border border-[#EDB5C1]'
                   }`}
                 >
                   {currentRules.length}
@@ -316,7 +316,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
               <div
                 className={`text-[11px] font-medium truncate ${
-                  activeTab === 'rules' ? 'text-pink-100' : 'text-gray-400'
+                  activeTab === 'rules' ? 'text-slate-800' : 'text-gray-400'
                 }`}
               >
                 Khen thưởng & Vi phạm nề nếp
@@ -329,13 +329,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             onClick={() => setActiveTab('cloud')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left transition-all cursor-pointer font-bold text-xs sm:text-sm ${
               activeTab === 'cloud'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/25 ring-1 ring-pink-500'
-                : 'text-gray-700 hover:bg-pink-50/60 hover:text-pink-700'
+                ? 'bg-[#EDB5C1] text-[#1E293B] font-black shadow-md shadow-[#EDB5C1]/25 border border-[#E5B2BD]'
+                : 'text-gray-700 hover:bg-[#FCF4F6] hover:text-[#1E293B]'
             }`}
           >
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                activeTab === 'cloud' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                activeTab === 'cloud' ? 'bg-white/40 text-[#1E293B]' : 'bg-gray-100 text-gray-600'
               }`}
             >
               <Cloud className="w-4 h-4" />
@@ -344,7 +344,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="font-bold">Đồng bộ đám mây</div>
               <div
                 className={`text-[11px] font-medium truncate ${
-                  activeTab === 'cloud' ? 'text-pink-100' : 'text-gray-400'
+                  activeTab === 'cloud' ? 'text-slate-800' : 'text-gray-400'
                 }`}
               >
                 Supabase Cloud & tự động lưu
@@ -357,13 +357,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             onClick={() => setActiveTab('backup')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left transition-all cursor-pointer font-bold text-xs sm:text-sm ${
               activeTab === 'backup'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/25 ring-1 ring-pink-500'
-                : 'text-gray-700 hover:bg-pink-50/60 hover:text-pink-700'
+                ? 'bg-[#EDB5C1] text-[#1E293B] font-black shadow-md shadow-[#EDB5C1]/25 border border-[#E5B2BD]'
+                : 'text-gray-700 hover:bg-[#FCF4F6] hover:text-[#1E293B]'
             }`}
           >
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                activeTab === 'backup' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                activeTab === 'backup' ? 'bg-white/40 text-[#1E293B]' : 'bg-gray-100 text-gray-600'
               }`}
             >
               <Save className="w-4 h-4" />
@@ -372,7 +372,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="font-bold">Sao lưu & Dữ liệu</div>
               <div
                 className={`text-[11px] font-medium truncate ${
-                  activeTab === 'backup' ? 'text-pink-100' : 'text-gray-400'
+                  activeTab === 'backup' ? 'text-slate-800' : 'text-gray-400'
                 }`}
               >
                 Xuất file JSON, nhập & xóa
@@ -387,14 +387,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           {activeTab === 'rules' && (
             <div className="space-y-4">
               {/* 2 Sub-tabs Bar: “Quy tắc cộng/trừ điểm” & “Thang điểm & Xếp loại” */}
-              <div className="bg-white rounded-2xl p-1.5 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 max-w-lg">
+              <div className="bg-white rounded-2xl p-1.5 border border-[#E5B2BD] shadow-2xs flex items-center gap-1.5 max-w-lg">
                 <button
                   type="button"
                   onClick={() => setRulesSubTab('rules_list')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                     rulesSubTab === 'rules_list'
-                      ? 'bg-pink-500 text-white shadow-sm shadow-pink-500/20'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+                      ? 'bg-[#EDB5C1] text-[#1E293B] shadow-sm shadow-[#EDB5C1]/20 border border-[#E5B2BD]'
+                      : 'text-gray-600 hover:text-[#1E293B] hover:bg-[#FCF4F6]'
                   }`}
                 >
                   <Scale className="w-4 h-4" />
@@ -402,7 +402,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
                       rulesSubTab === 'rules_list'
-                        ? 'bg-white/20 text-white'
+                        ? 'bg-white/40 text-[#1E293B]'
                         : 'bg-gray-200 text-gray-600'
                     }`}
                   >
@@ -413,10 +413,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setRulesSubTab('scale_rating')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                     rulesSubTab === 'scale_rating'
-                      ? 'bg-pink-500 text-white shadow-sm shadow-pink-500/20'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+                      ? 'bg-[#EDB5C1] text-[#1E293B] shadow-sm shadow-[#EDB5C1]/20 border border-[#E5B2BD]'
+                      : 'text-gray-600 hover:text-[#1E293B] hover:bg-[#FCF4F6]'
                   }`}
                 >
                   <Award className="w-4 h-4" />
@@ -427,10 +427,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               {rulesSubTab === 'rules_list' ? (
                 <>
                   {/* Filter, Search & Stats Header */}
-                  <div className="bg-white rounded-3xl p-5 sm:p-6 border border-pink-200/80 shadow-xs space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-pink-100">
+                  <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E5B2BD] shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E5B2BD]/50">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-[#FCF4F6] border border-[#EDB5C1] flex items-center justify-center text-[#1E293B] shrink-0">
                           <Scale className="w-5 h-5" />
                         </div>
                         <div>
@@ -466,7 +466,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={ruleSearch}
                       onChange={(e) => setRuleSearch(e.target.value)}
                       placeholder="Tìm kiếm quy tắc thi đua theo tên..."
-                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-pink-400 rounded-xl text-xs sm:text-sm font-medium text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-pink-300/40 transition-all"
+                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs sm:text-sm font-medium text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/40 transition-all"
                     />
                     {ruleSearch && (
                       <button
@@ -515,11 +515,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               {/* Rules List / Table */}
-              <div className="bg-white rounded-3xl border border-pink-200/80 shadow-xs overflow-hidden">
+              <div className="bg-white rounded-3xl border border-[#E5B2BD] shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-pink-50/50 text-[11px] font-black uppercase tracking-wider text-gray-600 border-b border-pink-100">
+                      <tr className="bg-[#FCF4F6] text-[11px] font-black uppercase tracking-wider text-[#1E293B] border-b border-[#E5B2BD]">
                         <th className="py-3 px-4 w-12 text-center">STT</th>
                         <th className="py-3 px-4">Tên quy tắc / Nội dung</th>
                         <th className="py-3 px-4 w-36 text-center">Phân loại</th>
@@ -537,7 +537,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             {ruleSearch && (
                               <button
                                 onClick={() => setRuleSearch('')}
-                                className="mt-2 text-xs text-pink-600 font-bold hover:underline"
+                                className="mt-2 text-xs text-[#1E293B] font-bold hover:underline"
                               >
                                 Xóa bộ lọc tìm kiếm
                               </button>
@@ -550,7 +550,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                           return (
                             <tr
                               key={rule.id}
-                              className="hover:bg-pink-50/20 transition-colors group"
+                              className="hover:bg-[#FCF4F6]/50 transition-colors group"
                             >
                               {/* STT */}
                               <td className="py-3.5 px-4 text-center font-bold text-gray-400 text-xs">
@@ -648,10 +648,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           {/* TAB 2: CÀI ĐẶT CHUNG (GENERAL CONFIG) */}
           {activeTab === 'general' && (
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-pink-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-pink-100">
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#E5B2BD] shadow-sm">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5B2BD]/50">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600">
+                  <div className="w-9 h-9 rounded-xl bg-[#FCF4F6] border border-[#EDB5C1] flex items-center justify-center text-[#1E293B]">
                     <School className="w-5 h-5" />
                   </div>
                   <div>
@@ -663,7 +663,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </p>
                   </div>
                 </div>
-                <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200">
+                <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-xs font-black bg-[#FCF4F6] text-[#1E293B] border border-[#EDB5C1]">
                   Quyền Chủ Nhiệm
                 </span>
               </div>
@@ -679,7 +679,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={formConfig.schoolName || ''}
                       onChange={(e) => setFormConfig({ ...formConfig, schoolName: e.target.value })}
                       placeholder="VD: Trường THCS Chu Văn An"
-                      className="w-full px-3.5 py-2.5 bg-pink-50/30 border border-pink-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-semibold text-gray-800"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF4F6]/30 border border-[#E5B2BD] rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-semibold text-gray-800"
                     />
                   </div>
 
@@ -692,7 +692,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={formConfig.className}
                       onChange={(e) => setFormConfig({ ...formConfig, className: e.target.value })}
                       placeholder="VD: 8A3"
-                      className="w-full px-3.5 py-2.5 bg-pink-50/30 border border-pink-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-bold text-pink-700"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF4F6]/30 border border-[#E5B2BD] rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-bold text-[#1E293B]"
                     />
                   </div>
 
@@ -705,7 +705,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={formConfig.schoolYear}
                       onChange={(e) => setFormConfig({ ...formConfig, schoolYear: e.target.value })}
                       placeholder="VD: 2024 - 2025"
-                      className="w-full px-3.5 py-2.5 bg-pink-50/30 border border-pink-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-semibold text-gray-800"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF4F6]/30 border border-[#E5B2BD] rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-semibold text-gray-800"
                     />
                   </div>
 
@@ -718,7 +718,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={formConfig.teacherName}
                       onChange={(e) => setFormConfig({ ...formConfig, teacherName: e.target.value })}
                       placeholder="VD: Cô Lê Thị Kim Thanh"
-                      className="w-full px-3.5 py-2.5 bg-pink-50/30 border border-pink-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-semibold text-gray-800"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF4F6]/30 border border-[#E5B2BD] rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-semibold text-gray-800"
                     />
                   </div>
 
@@ -730,7 +730,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       type="text"
                       value={formConfig.appName}
                       onChange={(e) => setFormConfig({ ...formConfig, appName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-pink-50/30 border border-pink-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-semibold"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF4F6]/30 border border-[#E5B2BD] rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-semibold"
                     />
                   </div>
 
@@ -744,7 +744,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       onChange={(e) =>
                         setFormConfig({ ...formConfig, teacherPassword: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 bg-pink-50/30 border border-pink-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-mono"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF4F6]/30 border border-[#E5B2BD] rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-mono"
                     />
                   </div>
 
@@ -765,7 +765,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         })
                       }
                       placeholder="8A3, 9A5, 7A1, 6A2"
-                      className="w-full px-3.5 py-2.5 bg-pink-50/30 border border-pink-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF4F6]/30 border border-[#E5B2BD] rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
                     />
                   </div>
                 </div>
@@ -773,7 +773,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <div className="pt-3 flex justify-end">
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-linear-to-r from-pink-600 via-rose-600 to-pink-600 hover:from-pink-700 hover:to-rose-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-pink-600/25 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                    className="px-6 py-2.5 bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs sm:text-sm rounded-xl shadow-md shadow-[#EDB5C1]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
                   >
                     <Save className="w-4 h-4" />
                     <span>Lưu Cài Đặt Lớp Học</span>
@@ -954,7 +954,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* MODAL: THÊM / CHỈNH SỬA QUY TẮC THI ĐUA */}
       {isRuleModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-pink-200 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E5B2BD] shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setIsRuleModalOpen(false)}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
@@ -962,8 +962,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-pink-100">
-              <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
+            <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-[#E5B2BD]/50">
+              <div className="w-9 h-9 rounded-xl bg-[#FCF4F6] border border-[#EDB5C1] text-[#1E293B] flex items-center justify-center">
                 <Scale className="w-5 h-5" />
               </div>
               <div>
@@ -1024,7 +1024,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   value={ruleFormName}
                   onChange={(e) => setRuleFormName(e.target.value)}
                   placeholder="VD: Nói chuyện riêng, Làm việc tốt..."
-                  className="w-full px-3.5 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-pink-400 rounded-xl text-xs sm:text-sm font-semibold text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-pink-300/40"
+                  className="w-full px-3.5 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs sm:text-sm font-semibold text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/40"
                 />
               </div>
 
@@ -1051,7 +1051,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     required
                     value={ruleFormPoints}
                     onChange={(e) => setRuleFormPoints(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="flex-1 px-3.5 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-pink-400 rounded-xl text-xs sm:text-sm font-black text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-pink-300/40"
+                    className="flex-1 px-3.5 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs sm:text-sm font-black text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/40"
                   />
                   <span className="text-xs font-bold text-gray-500">điểm</span>
                 </div>
@@ -1067,7 +1067,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   value={ruleFormDesc}
                   onChange={(e) => setRuleFormDesc(e.target.value)}
                   placeholder="VD: Áp dụng khi vi phạm trong giờ học chính khóa"
-                  className="w-full px-3.5 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-pink-400 rounded-xl text-xs font-medium text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-pink-300/40"
+                  className="w-full px-3.5 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs font-medium text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/40"
                 />
               </div>
 
@@ -1082,7 +1082,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-linear-to-r from-pink-600 via-rose-600 to-pink-600 hover:from-pink-700 hover:to-rose-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-pink-500/25 active:scale-95"
+                  className="px-5 py-2 rounded-xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#EDB5C1]/20 active:scale-95"
                 >
                   <Check className="w-4 h-4" />
                   <span>{editingRuleId ? 'Lưu thay đổi' : 'Tạo quy tắc'}</span>

@@ -116,13 +116,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Header Info Branding */}
       <div className="p-4 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-linear-to-tr from-pink-500 to-rose-600 flex items-center justify-center font-black text-white shadow-md shadow-pink-500/25">
+          <div className="w-10 h-10 rounded-2xl bg-[#EDB5C1] text-[#1E293B] flex items-center justify-center font-black shadow-md shadow-[#EDB5C1]/25">
             {className || '6A8'}
           </div>
           <div className="min-w-0">
             <h1 className="font-black text-sm tracking-tight text-white flex items-center gap-1.5">
               <span>TRỢ LÝ CHỦ NHIỆM</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/30">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#EDB5C1]/20 text-[#EDB5C1] border border-[#EDB5C1]/30">
                 Lớp {className}
               </span>
             </h1>
@@ -162,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isTeacher && (
             <button
               onClick={onOpenMyProfile}
-              className="text-[11px] text-pink-400 hover:text-pink-300 font-bold shrink-0 ml-1 cursor-pointer"
+              className="text-[11px] text-[#EDB5C1] hover:text-[#F8E2E7] font-bold shrink-0 ml-1 cursor-pointer"
             >
               Xem hồ sơ
             </button>
@@ -185,13 +185,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all text-left cursor-pointer ${
                   isActive
-                    ? 'bg-linear-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30 font-bold'
+                    ? 'bg-[#EDB5C1] text-[#1E293B] shadow-md shadow-[#EDB5C1]/25 font-black'
                     : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                 }`}
               >
                 <Icon
                   className={`w-5 h-5 shrink-0 transition-transform ${
-                    isActive ? 'scale-110 text-white' : 'text-slate-400'
+                    isActive ? 'scale-110 text-[#1E293B]' : 'text-slate-400'
                   }`}
                 />
                 <span className="truncate">{item.label}</span>
@@ -211,13 +211,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all text-left cursor-pointer ${
                   isActive
-                    ? 'bg-linear-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30 font-bold'
+                    ? 'bg-[#EDB5C1] text-[#1E293B] shadow-md shadow-[#EDB5C1]/25 font-black'
                     : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                 }`}
               >
                 <Icon
                   className={`w-5 h-5 shrink-0 transition-transform ${
-                    isActive ? 'scale-110 text-white' : 'text-slate-400'
+                    isActive ? 'scale-110 text-[#1E293B]' : 'text-slate-400'
                   }`}
                 />
                 <span className="truncate">{item.label}</span>

@@ -66,14 +66,14 @@ export const ClassSwitchModal: React.FC<ClassSwitchModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col">
         {/* Header */}
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-rose-600 text-white">
+        <div className="p-5 border-b border-[#E5B2BD] flex items-center justify-between bg-[#EDB5C1] text-[#1E293B]">
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-rose-200" />
-            <h3 className="font-bold text-base">Chuyển Đổi Lớp Học & Năm Học</h3>
+            <Layers className="w-5 h-5 text-[#1E293B]" />
+            <h3 className="font-black text-base">Chuyển Đổi Lớp Học & Năm Học</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-rose-200 hover:text-white font-bold cursor-pointer"
+            className="text-[#1E293B] hover:text-black font-black cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,7 +90,7 @@ export const ClassSwitchModal: React.FC<ClassSwitchModalProps> = ({
               value={school}
               onChange={(e) => setSchool(e.target.value)}
               placeholder="Trường THCS Chu Văn An"
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-1 focus:ring-rose-500 font-semibold"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-semibold"
             />
           </div>
 
@@ -106,13 +106,13 @@ export const ClassSwitchModal: React.FC<ClassSwitchModalProps> = ({
                   onClick={() => handleSelectPredefined(cls)}
                   className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-between cursor-pointer ${
                     selectedClass === cls && !customClass
-                      ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-xs'
+                      ? 'bg-[#FCF4F6] border-[#EDB5C1] text-[#1E293B] shadow-xs'
                       : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <span>Lớp {cls}</span>
                   {selectedClass === cls && !customClass && (
-                    <Check className="w-3.5 h-3.5 text-rose-600" />
+                    <Check className="w-3.5 h-3.5 text-[#1E293B]" />
                   )}
                 </button>
               ))}
@@ -130,7 +130,7 @@ export const ClassSwitchModal: React.FC<ClassSwitchModalProps> = ({
                   setSelectedClass(e.target.value);
                 }}
                 placeholder="VD: 8A4, 9B1..."
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-1 focus:ring-rose-500 font-bold uppercase"
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-bold uppercase"
               />
             </div>
           </div>
@@ -144,7 +144,7 @@ export const ClassSwitchModal: React.FC<ClassSwitchModalProps> = ({
               value={schoolYear}
               onChange={(e) => setSchoolYear(e.target.value)}
               placeholder="2024 - 2025"
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
             />
           </div>
 
@@ -157,7 +157,7 @@ export const ClassSwitchModal: React.FC<ClassSwitchModalProps> = ({
               value={teacher}
               onChange={(e) => setTeacher(e.target.value)}
               placeholder="VD: Cô Lê Thị Kim Thanh"
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
             />
           </div>
 
@@ -171,7 +171,7 @@ export const ClassSwitchModal: React.FC<ClassSwitchModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] text-xs font-black shadow-md shadow-[#EDB5C1]/20 cursor-pointer"
             >
               Chuyển Lớp
             </button>

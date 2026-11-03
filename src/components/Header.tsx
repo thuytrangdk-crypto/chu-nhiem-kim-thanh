@@ -71,13 +71,13 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md border-b border-pink-200/80 px-3 sm:px-4 lg:px-7 flex items-center justify-between shrink-0 shadow-xs z-30 transition-all">
+    <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md border-b border-[#EDB5C1]/60 px-3 sm:px-4 lg:px-7 flex items-center justify-between shrink-0 shadow-xs z-30 transition-all">
       <div className="flex items-center gap-3 min-w-0">
         {/* Mobile menu trigger */}
         <button
           onClick={onOpenMobileSidebar}
           aria-label="Mở thực đơn"
-          className="lg:hidden p-2 rounded-xl text-pink-700 hover:bg-pink-100/70 transition-colors cursor-pointer shrink-0"
+          className="lg:hidden p-2 rounded-xl text-[#1E293B] hover:bg-[#FCF4F6] transition-colors cursor-pointer shrink-0"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -87,9 +87,9 @@ export const Header: React.FC<HeaderProps> = ({
           <div
             onClick={onGoHome}
             title={`TRỢ LÝ CHỦ NHIỆM - Lớp ${className}`}
-            className="w-10 h-10 lg:w-11 lg:h-11 rounded-2xl bg-linear-to-tr from-pink-500 via-rose-500 to-pink-400 text-white flex items-center justify-center shadow-md shadow-pink-500/25 ring-2 ring-pink-300/50 shrink-0 cursor-pointer active:scale-95 transition-transform"
+            className="w-10 h-10 lg:w-11 lg:h-11 rounded-2xl bg-[#EDB5C1] text-[#1E293B] flex items-center justify-center shadow-md shadow-[#EDB5C1]/30 ring-2 ring-[#EDB5C1]/50 shrink-0 cursor-pointer active:scale-95 transition-transform"
           >
-            <GraduationCap className="w-6 h-6 text-white stroke-[2.2]" />
+            <GraduationCap className="w-6 h-6 text-[#1E293B] stroke-[2.2]" />
           </div>
 
           {/* School Name & Class info display */}
@@ -105,14 +105,14 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={onOpenClassSwitch}
                   title={`Bấm để chuyển đổi lớp (Đang chọn: Lớp ${className})`}
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-pink-100 hover:bg-pink-200 text-pink-700 border border-pink-300/80 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FCF4F6] hover:bg-[#F8E2E7] text-[#1E293B] border border-[#EDB5C1] shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0"
                 >
-                  <Layers className="w-3.5 h-3.5 text-pink-600 shrink-0" />
+                  <Layers className="w-3.5 h-3.5 text-[#C98292] shrink-0" />
                   <span>Lớp {className}</span>
-                  <ChevronDown className="w-3 h-3 text-pink-500 shrink-0" />
+                  <ChevronDown className="w-3 h-3 text-[#C98292] shrink-0" />
                 </button>
               ) : (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-pink-100 text-pink-700 border border-pink-300/80 shadow-2xs shrink-0">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FCF4F6] text-[#1E293B] border border-[#EDB5C1] shadow-2xs shrink-0">
                   Lớp {className}
                 </span>
               )}
@@ -127,8 +127,8 @@ export const Header: React.FC<HeaderProps> = ({
                 {schoolName || 'Trường THCS'}
               </span>
               <span className="text-gray-300 hidden sm:inline">•</span>
-              <span className="hidden sm:inline-flex items-center gap-1 text-pink-700 font-medium">
-                <Calendar className="w-3 h-3 text-pink-500 shrink-0" />
+              <span className="hidden sm:inline-flex items-center gap-1 text-[#1E293B] font-medium">
+                <Calendar className="w-3 h-3 text-[#C98292] shrink-0" />
                 <span>Năm học {schoolYear || '2024 - 2025'}</span>
               </span>
 
@@ -138,9 +138,9 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={onOpenQuickEditSchool}
                   title="Chỉnh sửa linh động tên trường, lớp và năm học"
-                  className="hidden md:inline-flex px-2 py-0.5 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-700 text-[10px] font-bold border border-pink-200/80 transition-all items-center gap-1 cursor-pointer ml-1 active:scale-95"
+                  className="hidden md:inline-flex px-2 py-0.5 rounded-lg bg-[#FCF4F6] hover:bg-[#F8E2E7] text-[#1E293B] text-[10px] font-bold border border-[#EDB5C1] transition-all items-center gap-1 cursor-pointer ml-1 active:scale-95"
                 >
-                  <Edit2 className="w-2.5 h-2.5 text-pink-600" />
+                  <Edit2 className="w-2.5 h-2.5 text-[#C98292]" />
                   <span>Sửa trường</span>
                 </button>
               )}

@@ -255,7 +255,7 @@ export async function exportEmulationToExcel(
   ws1.mergeCells('A2:M2');
   const titleCell = ws1.getCell('A2');
   titleCell.value = `BẢNG TỔNG HỢP ĐIỂM THI ĐUA NỀ NẾP - LỚP ${className.toUpperCase()}`;
-  titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF9D174D' } }; // Màu hồng đậm trang nhã
+  titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1E293B' } }; // Màu xanh đen đậm trang nhã
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
   ws1.getRow(2).height = 32;
 
@@ -298,11 +298,11 @@ export async function exportEmulationToExcel(
   headerRow1.height = 30;
 
   headerRow1.eachCell((cell) => {
-    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF831843' }, // Hồng ruby đậm chuyên nghiệp
+      fgColor: { argb: 'FFEDB5C1' }, // Màu hồng pastel #EDB5C1
     };
     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     cell.border = {

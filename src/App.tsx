@@ -1055,24 +1055,24 @@ export default function App() {
               onLogout={handleLogout}
             />
 
-            <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8 bg-[#fff8fa] custom-scrollbar">
-              {/* TOP PINK HERO BANNER FOR STUDENT (THEO MẪU 8A3 ẢNH 5, TONE HỒNG 6A8) */}
+            <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8 bg-[#FCF4F6] custom-scrollbar">
+              {/* TOP PASTEL PINK HERO BANNER FOR STUDENT (#EDB5C1, CHỮ XANH ĐEN #1E293B) */}
               {authRole === 'student' && authStudentId && (() => {
                 const currentStudent = state.students.find((s) => s.id === authStudentId);
                 if (!currentStudent) return null;
                 return (
-                  <div className="bg-linear-to-r from-pink-600 via-rose-600 to-pink-700 text-white rounded-3xl p-5 sm:p-6 mb-5 shadow-lg shadow-pink-600/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="bg-[#EDB5C1] text-[#1E293B] border border-[#E5B2BD] rounded-3xl p-5 sm:p-6 mb-5 shadow-md shadow-[#EDB5C1]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-xs ring-2 ring-white/30 flex items-center justify-center font-black text-xl sm:text-2xl text-white shadow-md shrink-0">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white text-[#1E293B] ring-2 ring-[#1E293B]/10 flex items-center justify-center font-black text-xl sm:text-2xl shadow-sm shrink-0">
                         {currentStudent.name.charAt(currentStudent.name.lastIndexOf(' ') + 1) || currentStudent.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold text-white mb-1">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/60 text-[11px] font-bold text-[#1E293B] mb-1 border border-white/40">
                           <span>Học sinh Lớp {state.config.className || '6A8'}</span>
                           <span>•</span>
                           <span>Năm học {state.config.schoolYear || '2026-2027'}</span>
                         </div>
-                        <h2 className="text-base sm:text-2xl font-black uppercase tracking-tight text-white truncate">
+                        <h2 className="text-base sm:text-2xl font-black uppercase tracking-tight text-[#1E293B] truncate">
                           {currentStudent.name}
                         </h2>
                       </div>
@@ -1080,9 +1080,9 @@ export default function App() {
 
                     <button
                       onClick={() => setSelectedStudentId(currentStudent.id)}
-                      className="px-5 py-2.5 rounded-2xl bg-white hover:bg-pink-50 text-pink-700 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
+                      className="px-5 py-2.5 rounded-2xl bg-[#1E293B] hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
                     >
-                      <User className="w-4 h-4 text-pink-600" />
+                      <User className="w-4 h-4 text-[#EDB5C1]" />
                       <span>Xem Hồ sơ của tôi</span>
                     </button>
                   </div>

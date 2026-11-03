@@ -227,11 +227,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onClick={() => handleTabChange('notices')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs ${
             activeTab === 'notices'
-              ? 'bg-linear-to-r from-pink-600 to-rose-600 text-white shadow-pink-600/25 ring-2 ring-pink-500/20'
-              : 'bg-white text-gray-700 hover:bg-pink-50/60 hover:text-pink-700 border border-gray-200/80'
+              ? 'bg-[#EDB5C1] text-[#1E293B] shadow-md shadow-[#EDB5C1]/25 border border-[#E5B2BD] font-black'
+              : 'bg-white text-gray-700 hover:bg-[#FCF4F6] hover:text-[#1E293B] border border-gray-200/80'
           }`}
         >
-          <Megaphone className="w-4 h-4 shrink-0" />
+          <Megaphone className="w-4 h-4 shrink-0 text-[#1E293B]" />
           <span>Bảng tin Thông báo</span>
         </button>
 
@@ -239,11 +239,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onClick={() => handleTabChange('seating')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs ${
             activeTab === 'seating'
-              ? 'bg-linear-to-r from-pink-600 to-rose-600 text-white shadow-pink-600/25 ring-2 ring-pink-500/20'
-              : 'bg-white text-gray-700 hover:bg-pink-50/60 hover:text-pink-700 border border-gray-200/80'
+              ? 'bg-[#EDB5C1] text-[#1E293B] shadow-md shadow-[#EDB5C1]/25 border border-[#E5B2BD] font-black'
+              : 'bg-white text-gray-700 hover:bg-[#FCF4F6] hover:text-[#1E293B] border border-gray-200/80'
           }`}
         >
-          <Grid3X3 className="w-4 h-4 shrink-0" />
+          <Grid3X3 className="w-4 h-4 shrink-0 text-[#1E293B]" />
           <span>Sơ đồ lớp</span>
         </button>
 
@@ -251,11 +251,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onClick={() => handleTabChange('honor')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs ${
             activeTab === 'honor'
-              ? 'bg-linear-to-r from-pink-600 to-rose-600 text-white shadow-pink-600/25 ring-2 ring-pink-500/20'
-              : 'bg-white text-gray-700 hover:bg-pink-50/60 hover:text-pink-700 border border-gray-200/80'
+              ? 'bg-[#EDB5C1] text-[#1E293B] shadow-md shadow-[#EDB5C1]/25 border border-[#E5B2BD] font-black'
+              : 'bg-white text-gray-700 hover:bg-[#FCF4F6] hover:text-[#1E293B] border border-gray-200/80'
           }`}
         >
-          <Trophy className="w-4 h-4 shrink-0" />
+          <Trophy className="w-4 h-4 shrink-0 text-[#1E293B]" />
           <span>Vinh danh & Thi đua</span>
         </button>
       </div>
@@ -266,10 +266,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
           {/* Cột Trái (2 phần): Danh sách thông báo */}
           <div className="lg:col-span-2 space-y-4">
             {/* Header Box Trang thông tin */}
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-pink-100 shadow-xs flex items-center justify-between gap-3">
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#EDB5C1]/50 shadow-xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-pink-50 border border-pink-200/80 flex items-center justify-center text-pink-600 shrink-0 shadow-2xs">
-                  <Megaphone className="w-5 h-5" />
+                <div className="w-11 h-11 rounded-2xl bg-[#FCF4F6] border border-[#EDB5C1] flex items-center justify-center text-[#1E293B] shrink-0 shadow-2xs">
+                  <Megaphone className="w-5 h-5 text-[#1E293B]" />
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
@@ -293,7 +293,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                     });
                     setIsAddNoticeOpen(true);
                   }}
-                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 active:scale-98 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                  className="px-4 py-2 bg-[#EDB5C1] hover:bg-[#E4A7B4] active:scale-98 text-[#1E293B] font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>Đăng tin</span>
@@ -321,7 +321,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                       key={n.id}
                       className={`bg-white rounded-3xl p-5 border shadow-xs transition-all hover:shadow-md relative overflow-hidden ${
                         n.pinned
-                          ? 'border-pink-300 ring-2 ring-pink-500/10'
+                          ? 'border-[#EDB5C1] ring-2 ring-[#EDB5C1]/20'
                           : 'border-gray-200/80'
                       }`}
                     >
@@ -333,7 +333,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                             : isInfo
                             ? 'bg-blue-500'
                             : n.pinned
-                            ? 'bg-pink-500'
+                            ? 'bg-[#EDB5C1]'
                             : 'bg-emerald-500'
                         }`}
                       />
@@ -342,9 +342,9 @@ export const BoardView: React.FC<BoardViewProps> = ({
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-black text-gray-900 text-sm sm:text-base flex items-center gap-1.5">
                             {n.pinned ? (
-                              <Pin className="w-4 h-4 text-pink-600 fill-pink-600 inline" />
+                              <Pin className="w-4 h-4 text-[#C98292] fill-[#C98292] inline" />
                             ) : (
-                              <AlertCircle className="w-4 h-4 text-pink-500 inline" />
+                              <AlertCircle className="w-4 h-4 text-[#C98292] inline" />
                             )}
                             {n.title}
                           </span>
@@ -355,7 +355,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                                 ? 'bg-rose-100 text-rose-800 border border-rose-300'
                                 : isInfo
                                 ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-pink-50 text-pink-700 border border-pink-200'
+                                : 'bg-[#FCF4F6] text-[#1E293B] border border-[#EDB5C1]'
                             }`}
                           >
                             {isHigh ? 'Khẩn / Quan trọng' : isInfo ? 'Nhắc nhở' : 'Thông tin'}
@@ -382,7 +382,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                           <Calendar className="w-3.5 h-3.5 text-gray-400" />
                           <span>Ngày đăng: {n.date}</span>
                         </span>
-                        <span className="font-bold text-pink-600 flex items-center gap-1">
+                        <span className="font-bold text-[#1E293B] flex items-center gap-1">
                           <User className="w-3.5 h-3.5" />
                           <span>{formatNoticeAuthor(n.author)}</span>
                         </span>
@@ -397,10 +397,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
           {/* Cột Phải (1 phần): TOP 5 HỌC TẬP & SƠ ĐỒ CHỖ NGỒI LỚP (Theo mẫu Ảnh 5) */}
           <div className="space-y-4">
             {/* THẺ 1: TOP 5 HỌC TẬP */}
-            <div className="bg-white rounded-3xl p-5 border border-pink-100 shadow-xs space-y-3.5">
+            <div className="bg-white rounded-3xl p-5 border border-[#EDB5C1]/50 shadow-xs space-y-3.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-pink-50 flex items-center justify-center text-pink-600">
+                  <div className="w-8 h-8 rounded-xl bg-[#FCF4F6] flex items-center justify-center text-[#1E293B] border border-[#EDB5C1]/40">
                     <GraduationCap className="w-4 h-4" />
                   </div>
                   <div>
@@ -420,7 +420,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
                 <button
                   onClick={() => handleTabChange('honor')}
-                  className="text-xs font-bold text-pink-600 hover:text-pink-700 flex items-center gap-0.5 cursor-pointer"
+                  className="text-xs font-black text-[#1E293B] hover:text-black flex items-center gap-0.5 cursor-pointer"
                 >
                   <span>Xem bảng vàng</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -461,7 +461,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                           {s.name}
                         </span>
                       </div>
-                      <span className="font-black text-pink-600 shrink-0">
+                      <span className="font-black text-[#1E293B] shrink-0">
                         {s.avgGrade.toFixed(1)} đ
                       </span>
                     </div>
@@ -470,37 +470,37 @@ export const BoardView: React.FC<BoardViewProps> = ({
               )}
             </div>
 
-            {/* THẺ 2: SƠ ĐỒ CHỖ NGỒI LỚP */}
+            {/* THẺ 2: SƠ ĐỒ CHỖ NGỒI LỚP (Màu hồng pastel #EDB5C1, chữ xanh đen #1E293B) */}
             <div
               onClick={() => handleTabChange('seating')}
-              className="bg-linear-to-br from-pink-600 via-rose-600 to-pink-700 text-white rounded-3xl p-5 shadow-lg shadow-pink-600/20 cursor-pointer hover:shadow-xl transition-all relative overflow-hidden group"
+              className="bg-[#EDB5C1] text-[#1E293B] rounded-3xl p-5 shadow-md shadow-[#EDB5C1]/20 border border-[#E5B2BD] cursor-pointer hover:shadow-lg transition-all relative overflow-hidden group"
             >
-              <div className="absolute right-3 -bottom-3 opacity-15 group-hover:opacity-25 transition-opacity">
+              <div className="absolute right-3 -bottom-3 opacity-15 group-hover:opacity-25 transition-opacity text-[#1E293B]">
                 <Grid3X3 className="w-24 h-24" />
               </div>
 
               <div className="relative z-10 space-y-2.5">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center">
-                    <Grid3X3 className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-xl bg-white/40 backdrop-blur-xs flex items-center justify-center">
+                    <Grid3X3 className="w-4 h-4 text-[#1E293B]" />
                   </div>
-                  <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                  <h3 className="font-black text-sm uppercase tracking-wider text-[#1E293B]">
                     SƠ ĐỒ CHỖ NGỒI LỚP
                   </h3>
                 </div>
 
-                <p className="text-xs text-pink-100 leading-relaxed">
+                <p className="text-xs text-slate-800 leading-relaxed">
                   Đã xếp vị trí bàn học cho {state.students.length} học sinh trong lớp {state.config.className || '6A8'}.
                 </p>
 
                 {currentStudentDeskKey && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/25 text-white text-[11px] font-bold">
-                    <Star className="w-3 h-3 fill-white" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/60 text-[#1E293B] text-[11px] font-black">
+                    <Star className="w-3 h-3 fill-[#1E293B]" />
                     <span>Bạn đã có vị trí ngồi cụ thể!</span>
                   </div>
                 )}
 
-                <div className="pt-2 flex items-center gap-1.5 text-xs font-bold text-white group-hover:translate-x-1 transition-transform">
+                <div className="pt-2 flex items-center gap-1.5 text-xs font-black text-[#1E293B] group-hover:translate-x-1 transition-transform">
                   <span>Mở xem sơ đồ lớp học</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
@@ -512,13 +512,13 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
       {/* TAB 2: SƠ ĐỒ LỚP HỌC (READ-ONLY CHO HỌC SINH, HIGHLIGHT VỊ TRÍ) */}
       {activeTab === 'seating' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-pink-100 shadow-xs space-y-6">
+        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EDB5C1]/50 shadow-xs space-y-6">
           {/* Header & Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
             <div>
               <h2 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2">
                 <span>Sơ Đồ Chỗ Ngồi Lớp {state.config.className || '6A8'}</span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-50 text-pink-700 border border-pink-200">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FCF4F6] text-[#1E293B] border border-[#EDB5C1]">
                   {state.students.length} Học sinh
                 </span>
               </h2>
@@ -533,7 +533,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleAutoAssign}
-                  className="px-3.5 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold text-xs rounded-xl transition-all cursor-pointer shadow-2xs"
+                  className="px-3.5 py-2 bg-[#FCF4F6] hover:bg-[#F8E2E7] text-[#1E293B] font-bold text-xs rounded-xl border border-[#EDB5C1]/60 transition-all cursor-pointer shadow-2xs"
                 >
                   Xếp tự động
                 </button>
@@ -549,8 +549,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
           {/* Student seat highlight badge */}
           {!isTeacher && authStudentId && currentStudentDeskKey && (
-            <div className="p-3 rounded-2xl bg-pink-50 border border-pink-200 flex items-center gap-2 text-xs text-pink-800 font-bold">
-              <Star className="w-4 h-4 fill-pink-500 text-pink-500 shrink-0" />
+            <div className="p-3 rounded-2xl bg-[#FCF4F6] border border-[#EDB5C1] flex items-center gap-2 text-xs text-[#1E293B] font-bold">
+              <Star className="w-4 h-4 fill-[#C98292] text-[#C98292] shrink-0" />
               <span>Vị trí ngồi của bạn đang được làm nổi bật với viền hồng trên sơ đồ bên dưới.</span>
             </div>
           )}
@@ -560,7 +560,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
             <div className="py-2.5 bg-slate-900 text-white rounded-2xl text-xs font-black tracking-wider uppercase shadow-md flex items-center justify-center gap-2">
               <span>BẢNG LỚP HỌC (PHÍA TRƯỚC)</span>
             </div>
-            <div className="w-40 mx-auto py-1.5 bg-pink-100 border border-pink-300 text-pink-900 rounded-xl text-xs font-bold shadow-2xs">
+            <div className="w-40 mx-auto py-1.5 bg-[#FCF4F6] border border-[#EDB5C1] text-[#1E293B] rounded-xl text-xs font-bold shadow-2xs">
               Bàn Giáo Viên
             </div>
           </div>
@@ -593,14 +593,14 @@ export const BoardView: React.FC<BoardViewProps> = ({
                         }}
                         className={`p-3 rounded-2xl border transition-all text-center flex flex-col justify-center items-center min-h-[105px] relative ${
                           isMySeat
-                            ? 'bg-linear-to-b from-pink-50 to-rose-50 border-pink-500 ring-4 ring-pink-500/25 shadow-md shadow-pink-500/10 cursor-pointer'
+                            ? 'bg-[#FCF4F6] border-[#EDB5C1] ring-4 ring-[#EDB5C1]/40 shadow-md shadow-[#EDB5C1]/20 cursor-pointer'
                             : student
-                            ? 'bg-pink-50/40 border-pink-200 hover:border-pink-300 hover:shadow-2xs cursor-default'
+                            ? 'bg-[#FCF4F6]/50 border-[#EDB5C1]/40 hover:border-[#EDB5C1] hover:shadow-2xs cursor-default'
                             : 'bg-gray-50/60 border-dashed border-gray-300'
                         }`}
                       >
                         {isMySeat && (
-                          <span className="absolute -top-2.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-pink-600 text-white shadow-xs">
+                          <span className="absolute -top-2.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-[#EDB5C1] text-[#1E293B] shadow-xs border border-[#E5B2BD]">
                             Vị trí của bạn
                           </span>
                         )}
@@ -610,17 +610,17 @@ export const BoardView: React.FC<BoardViewProps> = ({
                             <div
                               className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center mb-1 shadow-2xs ${
                                 isMySeat
-                                  ? 'bg-linear-to-tr from-pink-500 to-rose-600 text-white ring-2 ring-white'
-                                  : 'bg-linear-to-tr from-rose-400 to-pink-500 text-white'
+                                  ? 'bg-[#EDB5C1] text-[#1E293B] font-black ring-2 ring-white'
+                                  : 'bg-slate-700 text-white'
                               }`}
                             >
                               {student.name.charAt(student.name.lastIndexOf(' ') + 1) ||
                                 student.name.charAt(0)}
                             </div>
-                            <div className={`text-xs font-bold line-clamp-1 ${isMySeat ? 'text-pink-900 font-black' : 'text-gray-900'}`}>
+                            <div className={`text-xs font-bold line-clamp-1 ${isMySeat ? 'text-[#1E293B] font-black' : 'text-gray-900'}`}>
                               {student.name}
                             </div>
-                            <div className="text-[10px] text-pink-600 font-semibold line-clamp-1">
+                            <div className="text-[10px] text-gray-500 font-semibold line-clamp-1">
                               {student.position || 'Học sinh'}
                             </div>
                           </>
@@ -628,7 +628,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                           <div className="text-gray-400 text-xs">
                             <span className="font-medium">Chỗ trống</span>
                             {isTeacher && (
-                              <div className="text-[10px] text-pink-600 font-bold mt-0.5 cursor-pointer">
+                              <div className="text-[10px] text-[#1E293B] font-bold mt-0.5 cursor-pointer">
                                 + Xếp chỗ
                               </div>
                             )}
@@ -648,26 +648,26 @@ export const BoardView: React.FC<BoardViewProps> = ({
       {activeTab === 'honor' && (
         <div className="space-y-5">
           {/* Hero Banner Vinh Danh */}
-          <div className="bg-linear-to-r from-pink-600 via-rose-600 to-pink-700 text-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-pink-600/20 relative overflow-hidden">
+          <div className="bg-[#EDB5C1] text-[#1E293B] rounded-3xl p-6 sm:p-8 shadow-md shadow-[#EDB5C1]/20 border border-[#E5B2BD] relative overflow-hidden">
             <div className="relative z-10 max-w-xl space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-xs font-bold text-white">
-                <Trophy className="w-3.5 h-3.5 text-amber-300" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/60 backdrop-blur-xs text-xs font-black text-[#1E293B] border border-[#EDB5C1]">
+                <Trophy className="w-3.5 h-3.5 text-[#1E293B]" />
                 <span>BẢNG VÀNG THI ĐUA LỚP {state.config.className || '6A8'}</span>
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1E293B]">
                 Vinh Danh & Thi Đua Nền Nếp
               </h2>
-              <p className="text-xs sm:text-sm text-pink-100">
+              <p className="text-xs sm:text-sm text-slate-800">
                 Ghi nhận những nỗ lực học tập xuất sắc và thành tích rèn luyện nề nếp nổi bật của học sinh trong tuần và tháng.
               </p>
             </div>
           </div>
 
           {/* Leaderboard Table & Emulation Cards */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-pink-100 shadow-xs space-y-4">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#EDB5C1]/50 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
-                <Award className="w-5 h-5 text-pink-600" />
+                <Award className="w-5 h-5 text-[#1E293B]" />
                 <span>Bảng Xếp Hạng Điểm Thi Đua Tích Cực</span>
               </h3>
               <span className="text-xs font-semibold text-gray-400">
@@ -692,8 +692,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
                     return (
                       <tr
                         key={item.student.id}
-                        className={`hover:bg-pink-50/40 transition-colors ${
-                          isSelf ? 'bg-pink-50/80 font-bold' : ''
+                        className={`hover:bg-[#FCF4F6]/50 transition-colors ${
+                          isSelf ? 'bg-[#FCF4F6] font-bold' : ''
                         }`}
                       >
                         <td className="py-3 px-3 text-center">
@@ -717,7 +717,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                               {item.student.name}
                             </span>
                             {isSelf && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-pink-600 text-white">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-[#EDB5C1] text-[#1E293B] border border-[#E5B2BD]">
                                 Bạn
                               </span>
                             )}
@@ -726,7 +726,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                         <td className="py-3 px-3 text-center text-gray-500 text-xs">
                           {item.student.position || 'Học sinh'}
                         </td>
-                        <td className="py-3 px-3 text-center font-black text-pink-600 text-sm">
+                        <td className="py-3 px-3 text-center font-black text-[#1E293B] text-sm">
                           {item.score} đ
                         </td>
                         <td className="py-3 px-3 text-center">
@@ -758,11 +758,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
       {isAddNoticeOpen && isTeacher && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
           <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-linear-to-r from-pink-600 to-rose-600 text-white">
-              <h3 className="font-bold text-base">Đăng Thông Báo Lớp Mới</h3>
+            <div className="p-5 border-b border-[#E5B2BD] flex items-center justify-between bg-[#EDB5C1] text-[#1E293B]">
+              <h3 className="font-black text-base">Đăng Thông Báo Lớp Mới</h3>
               <button
                 onClick={() => setIsAddNoticeOpen(false)}
-                className="text-pink-200 hover:text-white text-lg font-bold cursor-pointer"
+                className="text-[#1E293B] hover:text-black text-lg font-black cursor-pointer"
               >
                 ✕
               </button>
@@ -779,7 +779,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                   value={noticeForm.title}
                   onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
                   placeholder="Ví dụ: Kế hoạch kiểm tra giữa kỳ..."
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500"
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
                 />
               </div>
 
@@ -793,7 +793,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                   value={noticeForm.content}
                   onChange={(e) => setNoticeForm({ ...noticeForm, content: e.target.value })}
                   placeholder="Nhập nội dung dặn dò học sinh và phụ huynh..."
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-pink-500"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
                 />
               </div>
 
@@ -807,7 +807,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                     onChange={(e) =>
                       setNoticeForm({ ...noticeForm, priority: e.target.value as any })
                     }
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-pink-500"
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
                   >
                     <option value="normal">Thông báo thường</option>
                     <option value="high">Khẩn / Quan trọng</option>
@@ -823,7 +823,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                     type="text"
                     value={noticeForm.author}
                     onChange={(e) => setNoticeForm({ ...noticeForm, author: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-pink-500"
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
                   />
                 </div>
               </div>
@@ -834,7 +834,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                   id="pinCheck"
                   checked={noticeForm.pinned}
                   onChange={(e) => setNoticeForm({ ...noticeForm, pinned: e.target.checked })}
-                  className="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer"
+                  className="rounded text-[#EDB5C1] focus:ring-[#EDB5C1] w-4 h-4 cursor-pointer accent-[#EDB5C1]"
                 />
                 <label htmlFor="pinCheck" className="text-xs font-bold text-gray-700 cursor-pointer">
                   Ghim thông báo này lên đầu bảng tin
@@ -851,7 +851,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs shadow-md shadow-pink-600/20 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs shadow-md shadow-[#EDB5C1]/25 cursor-pointer"
                 >
                   Đăng Thông Báo
                 </button>
@@ -864,12 +864,12 @@ export const BoardView: React.FC<BoardViewProps> = ({
       {/* MODAL: ASSIGN SEAT (GV ONLY) */}
       {assigningDeskKey && isTeacher && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[85vh]">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-pink-600 text-white">
-              <h3 className="font-bold text-sm">Xếp Học Sinh Vào Chỗ Ngồi</h3>
+          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#E5B2BD] flex flex-col max-h-[85vh]">
+            <div className="p-4 border-b border-[#E5B2BD] flex items-center justify-between bg-[#EDB5C1] text-[#1E293B]">
+              <h3 className="font-black text-sm">Xếp Học Sinh Vào Chỗ Ngồi</h3>
               <button
                 onClick={() => setAssigningDeskKey(null)}
-                className="text-pink-200 hover:text-white font-bold cursor-pointer"
+                className="text-[#1E293B] hover:text-black font-black cursor-pointer"
               >
                 ✕
               </button>
@@ -890,7 +890,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                   <button
                     key={s.id}
                     onClick={() => handleAssignStudent(assigningDeskKey, s.id)}
-                    className="w-full p-2.5 rounded-xl text-left text-xs font-medium text-gray-800 hover:bg-pink-50 hover:text-pink-900 transition-colors flex items-center justify-between cursor-pointer"
+                    className="w-full p-2.5 rounded-xl text-left text-xs font-medium text-gray-800 hover:bg-[#FCF4F6] hover:text-[#1E293B] transition-colors flex items-center justify-between cursor-pointer"
                   >
                     <span>{s.name}</span>
                     <span className="text-[10px] text-gray-400">

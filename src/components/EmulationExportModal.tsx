@@ -253,30 +253,30 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-pink-200 flex flex-col max-h-[92vh]">
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#E5B2BD] flex flex-col max-h-[92vh]">
         {/* Header Modal */}
-        <div className="bg-linear-to-r from-rose-600 via-pink-600 to-rose-700 p-5 sm:p-6 text-white relative shrink-0">
+        <div className="bg-linear-to-r from-[#FCF4F6] via-[#FAF0F3] to-[#F8E2E7] border-b border-[#E5B2BD] p-5 sm:p-6 text-[#1E293B] relative shrink-0">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            className="absolute top-4 right-4 p-2 rounded-xl bg-white/80 hover:bg-white text-[#1E293B] border border-[#EDB5C1] transition-colors cursor-pointer"
             aria-label="Đóng"
           >
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-md">
-              <FileSpreadsheet className="w-7 h-7 text-white stroke-[2.2]" />
+            <div className="w-12 h-12 rounded-2xl bg-[#EDB5C1] flex items-center justify-center text-[#1E293B] shadow-md border border-[#E5B2BD]">
+              <FileSpreadsheet className="w-7 h-7 text-[#1E293B] stroke-[2.2]" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2 py-0.5 rounded-full bg-white/20 text-[11px] font-bold text-white uppercase tracking-wider">
+                <span className="px-2 py-0.5 rounded-full bg-[#FCF4F6] border border-[#EDB5C1] text-[11px] font-black text-[#1E293B] uppercase tracking-wider">
                   Chỉ Dành Cho Giáo Viên
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 text-[11px] font-black">
+                <span className="px-2 py-0.5 rounded-full bg-[#1E293B] text-white text-[11px] font-black">
                   Lớp {state.config.className}
                 </span>
               </div>
-              <h2 className="text-xl font-black tracking-tight text-white mt-1">
+              <h2 className="text-xl font-black tracking-tight text-[#1E293B] mt-1">
                 Xuất Excel Thi Đua Nề Nếp
               </h2>
             </div>
@@ -284,28 +284,28 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 bg-pink-50/20">
+        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 bg-[#FCF4F6]/40">
           {/* Metadata Card: Class info, Teacher, Export time */}
-          <div className="bg-white rounded-2xl p-4 border border-pink-200/80 shadow-2xs space-y-2.5">
+          <div className="bg-white rounded-2xl p-4 border border-[#E5B2BD] shadow-2xs space-y-2.5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-gray-700">
               <div className="flex items-center gap-2">
-                <School className="w-4 h-4 text-pink-600 shrink-0" />
+                <School className="w-4 h-4 text-[#1E293B] shrink-0" />
                 <span className="font-semibold truncate">
                   {state.config.schoolName || 'Trường THCS Chu Văn An'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-pink-600 shrink-0" />
+                <Calendar className="w-4 h-4 text-[#1E293B] shrink-0" />
                 <span className="font-semibold">Năm học: {schoolYear}</span>
               </div>
               <div className="flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-pink-600 shrink-0" />
+                <UserCheck className="w-4 h-4 text-[#1E293B] shrink-0" />
                 <span className="font-semibold truncate">
                   GVCN: {state.config.teacherName || 'Cô Lê Thị Kim Thanh'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-pink-600 shrink-0" />
+                <Clock className="w-4 h-4 text-[#1E293B] shrink-0" />
                 <span className="font-semibold text-gray-600">
                   Thời gian xuất: <strong className="text-gray-900">{exportTimeStr}</strong>
                 </span>
@@ -317,7 +317,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
           <div>
             <label className="block text-xs font-black text-gray-800 uppercase tracking-wider mb-2.5 flex items-center justify-between">
               <span>1. Chọn Kỳ Báo Cáo Thi Đua</span>
-              <span className="text-[11px] font-medium text-pink-600">Đầy đủ 5 tùy chọn</span>
+              <span className="text-[11px] font-black text-[#1E293B]">Đầy đủ 5 tùy chọn</span>
             </label>
 
             {/* Tabs chọn loại kỳ */}
@@ -327,7 +327,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
                 onClick={() => setPeriodType('week')}
                 className={`py-2 px-1.5 rounded-xl transition-all cursor-pointer text-center ${
                   periodType === 'week'
-                    ? 'bg-white text-rose-700 shadow-xs font-black'
+                    ? 'bg-[#EDB5C1] text-[#1E293B] shadow-xs font-black'
                     : 'hover:text-gray-900'
                 }`}
               >
@@ -338,7 +338,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
                 onClick={() => setPeriodType('month')}
                 className={`py-2 px-1.5 rounded-xl transition-all cursor-pointer text-center ${
                   periodType === 'month'
-                    ? 'bg-white text-rose-700 shadow-xs font-black'
+                    ? 'bg-[#EDB5C1] text-[#1E293B] shadow-xs font-black'
                     : 'hover:text-gray-900'
                 }`}
               >
@@ -349,7 +349,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
                 onClick={() => setPeriodType('semester')}
                 className={`py-2 px-1.5 rounded-xl transition-all cursor-pointer text-center ${
                   periodType === 'semester'
-                    ? 'bg-white text-rose-700 shadow-xs font-black'
+                    ? 'bg-[#EDB5C1] text-[#1E293B] shadow-xs font-black'
                     : 'hover:text-gray-900'
                 }`}
               >
@@ -360,7 +360,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
                 onClick={() => setPeriodType('year')}
                 className={`py-2 px-1.5 rounded-xl transition-all cursor-pointer text-center ${
                   periodType === 'year'
-                    ? 'bg-white text-rose-700 shadow-xs font-black'
+                    ? 'bg-[#EDB5C1] text-[#1E293B] shadow-xs font-black'
                     : 'hover:text-gray-900'
                 }`}
               >
@@ -371,7 +371,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
                 onClick={() => setPeriodType('custom')}
                 className={`py-2 px-1.5 rounded-xl transition-all cursor-pointer text-center col-span-2 sm:col-span-1 ${
                   periodType === 'custom'
-                    ? 'bg-white text-rose-700 shadow-xs font-black'
+                    ? 'bg-[#EDB5C1] text-[#1E293B] shadow-xs font-black'
                     : 'hover:text-gray-900'
                 }`}
               >
@@ -380,7 +380,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
             </div>
 
             {/* Chi tiết cho từng loại kỳ */}
-            <div className="mt-3 p-4 bg-white rounded-2xl border border-pink-200/90 shadow-2xs">
+            <div className="mt-3 p-4 bg-white rounded-2xl border border-[#E5B2BD] shadow-2xs">
               {/* 1. Theo Tuần */}
               {periodType === 'week' && (
                 <div className="space-y-3">
@@ -576,7 +576,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
             type="button"
             onClick={handleExport}
             disabled={isExporting || state.students.length === 0}
-            className="px-5 py-2.5 rounded-xl bg-linear-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-pink-500/25 transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+            className="px-5 py-2.5 rounded-xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs sm:text-sm shadow-md shadow-[#EDB5C1]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
           >
             <Download className="w-4 h-4" />
             <span>{isExporting ? 'Đang tạo file Excel...' : 'Tải File Excel Thi Đua (.xlsx)'}</span>

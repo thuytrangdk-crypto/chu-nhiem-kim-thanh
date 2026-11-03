@@ -258,10 +258,10 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             </button>
             <button
               onClick={() => setIsEmulationExportOpen(true)}
-              className="px-3.5 py-2 bg-linear-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold text-xs rounded-xl shadow-xs shadow-pink-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="px-3.5 py-2 bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs rounded-xl shadow-xs shadow-[#EDB5C1]/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
               title="Xuất file Excel gồm 2 sheet Tổng hợp và Chi tiết thi đua của lớp"
             >
-              <FileSpreadsheet className="w-4 h-4" />
+              <FileSpreadsheet className="w-4 h-4 text-[#1E293B]" />
               <span>Xuất Excel thi đua</span>
             </button>
             <button
@@ -682,9 +682,9 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                         password: formatViDate(newDob) || newDob,
                       });
                     }}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-semibold"
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] font-semibold"
                   />
-                  <p className="text-[10px] text-pink-600 mt-1 font-medium">
+                  <p className="text-[10px] text-[#1E293B] mt-1 font-semibold">
                     Mật khẩu đăng nhập mặc định: <strong>{formatViDate(formData.dob || '2012-01-01')}</strong>
                   </p>
                 </div>
