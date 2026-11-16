@@ -8,6 +8,18 @@ export type AttendanceStatus = 'c' | 'v' | 'm' | 'kp';
 
 export type ConductGrade = 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt';
 
+export type SemesterId = 'hk1' | 'hk2';
+export type SemesterFilter = 'hk1' | 'hk2' | 'all';
+
+export interface SchoolYearSemesterConfig {
+  schoolYear: string; // Chuẩn hóa dạng '2026 - 2027'
+  hk1Start: string;   // YYYY-MM-DD
+  hk1End: string;     // YYYY-MM-DD
+  hk2Start: string;   // YYYY-MM-DD
+  hk2End: string;     // YYYY-MM-DD
+  updatedAt?: string;
+}
+
 export interface OfficialConductEvaluation {
   rating: ConductGrade;
   reason?: string;
@@ -31,6 +43,7 @@ export interface Student {
   conduct?: string; // Tốt, Khá, Đạt, Chưa đạt
   notes?: string;
   officialConduct?: OfficialConductEvaluation;
+  officialConductByPeriod?: Record<string, OfficialConductEvaluation>; // Key: `${normalizedSchoolYear}_${semester}`
 }
 
 export interface AttendanceRecord {
@@ -49,6 +62,9 @@ export interface DisciplineRecord {
   note?: string;
   type: 'plus' | 'minus';
   author?: string;
+  schoolYear?: string; // Năm học gắn với sự việc, vd '2026 - 2027'
+  semester?: SemesterId; // 'hk1' | 'hk2'
+  updatedAt?: string;
 }
 
 export interface DisciplineRule {
@@ -123,14 +139,14 @@ export interface ConductTierConfig {
 
 export interface EmulationConfig {
   // Thang điểm thi đua
-  initialPoints: number; // Điểm khởi đầu của mỗi học sinh trong một kỳ (mặc định 100)
+  initialPoints: number; // Điểm khởi đầu của mỗi học sinh trong một học kỳ (mặc định 200)
   periodType: EmulationPeriodType; // Kỳ tính điểm mặc định: tuần, tháng, học kỳ hoặc năm học
   
   // Giới hạn điểm
   enableMinScore: boolean; // Bật/tắt điểm tối thiểu
   minScore: number; // Điểm tối thiểu (ví dụ 0)
   enableMaxScore: boolean; // Bật/tắt điểm tối đa
-  maxScore: number; // Điểm tối đa (ví dụ 100 hoặc 120)
+  maxScore: number; // Điểm tối đa (ví dụ 200 hoặc 220)
 
   // Quy tắc tổng hợp học kỳ / cả năm (không tự cộng dồn điểm khởi đầu các tháng một cách tùy tiện)
   aggregationMethod: 'single_initial' | 'monthly_average' | 'monthly_cumulative';
@@ -158,4 +174,5 @@ export interface AppState {
   disciplineRules?: DisciplineRule[];
   emulationConfig?: EmulationConfig;
   classEmulationConfigs?: Record<string, EmulationConfig>; // Tách riêng theo lớp và năm học: key = `${className}_${schoolYear}`
+  semesterConfigs?: Record<string, SchoolYearSemesterConfig>; // Cấu hình ngày bắt đầu/kết thúc HK I & HK II theo từng năm học
 }

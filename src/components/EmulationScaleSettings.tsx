@@ -1,15 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Save, AlertCircle, Award, CheckCircle2, Loader2 } from 'lucide-react';
-import { AppState, ConductTierConfig, EmulationConfig } from '../types';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Save, AlertCircle, Award, Calendar, Loader2, RotateCcw } from 'lucide-react';
+import {
+  AppState,
+  ConductTierConfig,
+  EmulationConfig,
+  SchoolYearSemesterConfig,
+} from '../types';
 import {
   getEmulationConfigForClass,
   validateConductTiers,
 } from '../utils/emulationEvaluation';
+import {
+  getAllAvailableSchoolYears,
+  getDefaultSemesterConfig,
+  getSemesterConfigForYear,
+  getSemesterInitialPoints,
+  normalizeSchoolYear,
+  validateSemesterConfig,
+} from '../utils/semesterUtils';
+import { formatViDate } from '../utils/helpers';
 
 interface EmulationScaleSettingsProps {
   state: AppState;
   onUpdateEmulationConfig: (
     newConfig: EmulationConfig
+  ) => Promise<{ success: boolean; error?: string }> | void;
+  onUpdateSemesterConfig?: (
+    cfg: SchoolYearSemesterConfig
   ) => Promise<{ success: boolean; error?: string }> | void;
   onShowToast: (msg: string, type?: 'success' | 'error') => void;
 }
@@ -28,10 +45,11 @@ interface EmulationScaleSettingsProps {
 export const EmulationScaleSettings: React.FC<EmulationScaleSettingsProps> = ({
   state,
   onUpdateEmulationConfig,
+  onUpdateSemesterConfig,
   onShowToast,
 }) => {
   const currentClass = state.config.className || '6A8';
-  const currentYear = state.config.schoolYear || '2024 - 2025';
+  const currentYear = state.config.schoolYear || '2026 - 2027';
   const classKey = `${currentClass}_${currentYear}`;
 
   // Lấy cấu hình thi đua hiện hành cho đúng lớp và năm học
@@ -42,13 +60,13 @@ export const EmulationScaleSettings: React.FC<EmulationScaleSettingsProps> = ({
     currentYear
   );
 
-  // Helper trích xuất giá trị lưu từ config
+  // Helper trích xuất giá trị lưu từ config (mặc định 200 điểm cho mỗi học kỳ)
   const getStoredValues = (cfg: EmulationConfig) => {
     const totTier = cfg.conductTiers?.find((t) => t.id === 'tot');
     const khaTier = cfg.conductTiers?.find((t) => t.id === 'kha');
     const datTier = cfg.conductTiers?.find((t) => t.id === 'dat');
 
-    const initPts = cfg.initialPoints !== undefined ? cfg.initialPoints : 100;
+    const initPts = getSemesterInitialPoints(cfg);
     const tVal = totTier?.minScore !== undefined ? totTier.minScore : 105;
     const kVal = khaTier?.minScore !== undefined ? khaTier.minScore : 90;
     const dVal = datTier?.minScore !== undefined ? datTier.minScore : 70;
@@ -249,8 +267,113 @@ export const EmulationScaleSettings: React.FC<EmulationScaleSettingsProps> = ({
     }
   };
 
+  // ================================================================
+  // CẤU HÌNH THỜI GIAN HỌC KỲ I & HỌC KỲ II THEO TỪNG NĂM HỌC
+  // ================================================================
+  const availableSchoolYears = useMemo(
+    () => getAllAvailableSchoolYears(state),
+    [state]
+  );
+  const [selectedScheduleYear, setSelectedScheduleYear] = useState<string>(
+    normalizeSchoolYear(currentYear)
+  );
+  const [customYearInput, setCustomYearInput] = useState<string>('');
+
+  const storedSemesterCfg = useMemo(
+    () => getSemesterConfigForYear(state.semesterConfigs, selectedScheduleYear),
+    [state.semesterConfigs, selectedScheduleYear]
+  );
+
+  const [hk1Start, setHk1Start] = useState<string>(storedSemesterCfg.hk1Start);
+  const [hk1End, setHk1End] = useState<string>(storedSemesterCfg.hk1End);
+  const [hk2Start, setHk2Start] = useState<string>(storedSemesterCfg.hk2Start);
+  const [hk2End, setHk2End] = useState<string>(storedSemesterCfg.hk2End);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  const isScheduleDirtyRef = useRef(false);
+  const scheduleYearRef = useRef(selectedScheduleYear);
+
+  useEffect(() => {
+    if (scheduleYearRef.current !== selectedScheduleYear) {
+      scheduleYearRef.current = selectedScheduleYear;
+      isScheduleDirtyRef.current = false;
+      setHk1Start(storedSemesterCfg.hk1Start);
+      setHk1End(storedSemesterCfg.hk1End);
+      setHk2Start(storedSemesterCfg.hk2Start);
+      setHk2End(storedSemesterCfg.hk2End);
+      setScheduleError(null);
+      return;
+    }
+    if (!isScheduleDirtyRef.current) {
+      setHk1Start(storedSemesterCfg.hk1Start);
+      setHk1End(storedSemesterCfg.hk1End);
+      setHk2Start(storedSemesterCfg.hk2Start);
+      setHk2End(storedSemesterCfg.hk2End);
+    }
+  }, [selectedScheduleYear, storedSemesterCfg]);
+
+  const handleSaveSemesterSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onUpdateSemesterConfig) return;
+
+    const draft: SchoolYearSemesterConfig = {
+      schoolYear: normalizeSchoolYear(selectedScheduleYear),
+      hk1Start,
+      hk1End,
+      hk2Start,
+      hk2End,
+    };
+
+    const validation = validateSemesterConfig(draft);
+    if (!validation.isValid) {
+      setScheduleError(validation.errorMessage || 'Thời gian học kỳ chưa hợp lệ.');
+      onShowToast(validation.errorMessage || 'Thời gian học kỳ chưa hợp lệ', 'error');
+      return;
+    }
+
+    setIsSavingSchedule(true);
+    setScheduleError(null);
+    try {
+      const res = await onUpdateSemesterConfig(draft);
+      setIsSavingSchedule(false);
+      if (res && res.success === false) {
+        setScheduleError(res.error || 'Lỗi khi lưu lịch học kỳ.');
+        onShowToast(res.error || 'Lỗi khi lưu lịch học kỳ', 'error');
+        return;
+      }
+      isScheduleDirtyRef.current = false;
+      onShowToast(`Đã lưu lịch Học kỳ I & II cho năm học ${draft.schoolYear}!`);
+    } catch (err: any) {
+      setIsSavingSchedule(false);
+      setScheduleError(err?.message || 'Lỗi khi lưu lịch học kỳ.');
+      onShowToast(err?.message || 'Lỗi khi lưu lịch học kỳ', 'error');
+    }
+  };
+
+  const handleResetDefaultSchedule = () => {
+    const def = getDefaultSemesterConfig(selectedScheduleYear);
+    isScheduleDirtyRef.current = true;
+    setHk1Start(def.hk1Start);
+    setHk1End(def.hk1End);
+    setHk2Start(def.hk2Start);
+    setHk2End(def.hk2End);
+    setScheduleError(null);
+  };
+
+  const handleAddCustomScheduleYear = () => {
+    const normalized = normalizeSchoolYear(customYearInput);
+    if (!/^\d{4}\s*-\s*\d{4}$/.test(normalized)) {
+      onShowToast('Vui lòng nhập năm học đúng định dạng (ví dụ: 2027 - 2028)', 'error');
+      return;
+    }
+    setSelectedScheduleYear(normalized);
+    setCustomYearInput('');
+  };
+
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-blue-200/90 shadow-xs max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-blue-200/90 shadow-xs space-y-6">
       {/* 1. Tiêu đề Khung Duy Nhất */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-blue-100">
         <div className="flex items-center gap-3">
@@ -290,7 +413,7 @@ export const EmulationScaleSettings: React.FC<EmulationScaleSettingsProps> = ({
                 Điểm thi đua chuẩn ban đầu
               </label>
               <p className="text-xs text-blue-800/80 mt-0.5 font-medium">
-                Mức điểm khởi đầu của mỗi học sinh trong kỳ (trước khi cộng điểm thưởng hoặc trừ điểm vi phạm)
+                Mỗi học kỳ khởi tạo độc lập với số điểm này (mặc định 200 điểm/học kỳ, không cộng dồn giữa HK I và HK II)
               </p>
             </div>
             <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
@@ -302,7 +425,7 @@ export const EmulationScaleSettings: React.FC<EmulationScaleSettingsProps> = ({
                 autoComplete="off"
                 value={initialPointsInput}
                 onChange={handleInitialPointsChange}
-                placeholder="100"
+                placeholder="200"
                 className={`w-36 px-4 py-2.5 bg-white border-2 rounded-xl text-base font-black text-gray-900 text-center shadow-2xs focus:outline-hidden focus:ring-2 transition-all ${
                   fieldErrors.initialPoints
                     ? 'border-rose-400 focus:ring-rose-300'
@@ -497,6 +620,211 @@ export const EmulationScaleSettings: React.FC<EmulationScaleSettingsProps> = ({
           </button>
         </div>
       </form>
+    </div>
+
+    {/* KHUNG 2: CẤU HÌNH THỜI GIAN HỌC KỲ I & II THEO TỪNG NĂM HỌC */}
+    {onUpdateSemesterConfig && (
+      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#E5B2BD] shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#EDB5C1]/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#EDB5C1] text-[#1E293B] flex items-center justify-center shadow-sm shrink-0">
+              <Calendar className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+                Cấu hình Thời gian Học kỳ I &amp; Học kỳ II theo Năm học
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Hệ thống tự động chuyển học kỳ và khởi tạo 200/200 điểm cho Học kỳ II dựa trên mốc ngày cấu hình bên dưới.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleResetDefaultSchedule}
+            className="px-3 py-1.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-xs font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+            title="Khôi phục ngày mặc định cho năm học đang chọn"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Mặc định năm này</span>
+          </button>
+        </div>
+
+        <form onSubmit={handleSaveSemesterSchedule} className="space-y-5">
+          {/* Chọn hoặc thêm năm học */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end bg-[#FCF4F6]/70 p-4 rounded-2xl border border-[#EDB5C1]/60">
+            <div>
+              <label className="block text-xs font-black text-[#1E293B] uppercase mb-1.5">
+                Chọn năm học cần cấu hình
+              </label>
+              <select
+                value={selectedScheduleYear}
+                onChange={(e) => setSelectedScheduleYear(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-[#EDB5C1] rounded-xl text-sm font-bold text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] cursor-pointer"
+              >
+                {Array.from(new Set([...availableSchoolYears, selectedScheduleYear]))
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((yr) => (
+                    <option key={yr} value={yr}>
+                      Năm học {yr}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1.5">
+                Hoặc thêm năm học khác (VD: 2027 - 2028)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customYearInput}
+                  onChange={(e) => setCustomYearInput(e.target.value)}
+                  placeholder="2027 - 2028"
+                  className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomScheduleYear}
+                  className="px-3.5 py-2 rounded-xl bg-white border border-[#EDB5C1] hover:bg-[#EDB5C1]/30 text-xs font-black text-[#1E293B] cursor-pointer shrink-0"
+                >
+                  Chọn năm
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 2 Khối Học kỳ I & Học kỳ II */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Học kỳ I */}
+            <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-200 space-y-3">
+              <div className="flex items-center justify-between border-b border-sky-200/70 pb-2">
+                <span className="text-sm font-black text-sky-950">HỌC KỲ I</span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800">
+                  Khởi tạo: 200đ
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-sky-900 mb-1">
+                    Ngày bắt đầu HK I
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={hk1Start}
+                    onChange={(e) => {
+                      isScheduleDirtyRef.current = true;
+                      setHk1Start(e.target.value);
+                      setScheduleError(null);
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-sky-300 rounded-xl text-xs font-bold text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-sky-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-sky-900 mb-1">
+                    Ngày kết thúc HK I
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={hk1End}
+                    onChange={(e) => {
+                      isScheduleDirtyRef.current = true;
+                      setHk1End(e.target.value);
+                      setScheduleError(null);
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-sky-300 rounded-xl text-xs font-bold text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-sky-300"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-sky-800/80 font-medium">
+                Phạm vi: {formatViDate(hk1Start)} → {formatViDate(hk1End)}
+              </p>
+            </div>
+
+            {/* Học kỳ II */}
+            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+              <div className="flex items-center justify-between border-b border-emerald-200/70 pb-2">
+                <span className="text-sm font-black text-emerald-950">HỌC KỲ II</span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                  Khởi tạo mới: 200đ
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-900 mb-1">
+                    Ngày bắt đầu HK II
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={hk2Start}
+                    onChange={(e) => {
+                      isScheduleDirtyRef.current = true;
+                      setHk2Start(e.target.value);
+                      setScheduleError(null);
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-900 mb-1">
+                    Ngày kết thúc HK II
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={hk2End}
+                    onChange={(e) => {
+                      isScheduleDirtyRef.current = true;
+                      setHk2End(e.target.value);
+                      setScheduleError(null);
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-300"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-emerald-800/80 font-medium">
+                Phạm vi: {formatViDate(hk2Start)} → {formatViDate(hk2End)}
+              </p>
+            </div>
+          </div>
+
+          {scheduleError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{scheduleError}</span>
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-[11px] text-gray-500">
+              Lịch sử vi phạm/khen thưởng cũ luôn được giữ nguyên theo từng học kỳ và không bao giờ bị xóa khi chuyển kỳ.
+            </p>
+            <button
+              type="submit"
+              disabled={isSavingSchedule}
+              className="px-5 py-2.5 rounded-2xl bg-[#EDB5C1] hover:bg-[#E4A7B4] text-[#1E293B] font-black text-xs sm:text-sm shadow-sm active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 disabled:opacity-60"
+            >
+              {isSavingSchedule ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Lưu thời gian học kỳ</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
     </div>
   );
 };

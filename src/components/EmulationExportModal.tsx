@@ -20,6 +20,14 @@ import {
   calculateEmulationData,
   exportEmulationToExcel,
 } from '../utils/emulationExport';
+import {
+  filterRecordsForSemester,
+  getAllAvailableSchoolYears,
+  getSemesterConfigForYear,
+  normalizeSchoolYear,
+  parseSchoolYearBounds,
+} from '../utils/semesterUtils';
+import { getEmulationConfigForClass } from '../utils/emulationEvaluation';
 
 interface EmulationExportModalProps {
   isOpen: boolean;
@@ -36,17 +44,29 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
   state,
   onShowToast,
 }) => {
-  const [periodType, setPeriodType] = useState<PeriodType>('month');
+  const [periodType, setPeriodType] = useState<PeriodType>('semester');
   const [isExporting, setIsExporting] = useState(false);
-
-  // Parse current school year
-  const schoolYear = state.config.schoolYear || '2024 - 2025';
-  const yearMatch = schoolYear.match(/(\d{4})\s*[-–]\s*(\d{4})/);
-  const startYear = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear();
-  const endYear = yearMatch ? parseInt(yearMatch[2]) : startYear + 1;
 
   const today = getTodayStr(); // YYYY-MM-DD
   const currentMonth = today.substring(0, 7); // YYYY-MM
+
+  const availableSchoolYears = useMemo(
+    () => getAllAvailableSchoolYears(state, today),
+    [state, today]
+  );
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState<string>(
+    normalizeSchoolYear(state.config.schoolYear || '2026 - 2027')
+  );
+
+  const { startYear, endYear } = useMemo(
+    () => parseSchoolYearBounds(selectedSchoolYear),
+    [selectedSchoolYear]
+  );
+
+  const semesterSchedule = useMemo(
+    () => getSemesterConfigForYear(state.semesterConfigs, selectedSchoolYear),
+    [state.semesterConfigs, selectedSchoolYear]
+  );
 
   // States for sub-options
   const [selectedWeekType, setSelectedWeekType] = useState<'this_week' | 'last_week' | 'pick_date'>('this_week');
@@ -136,34 +156,39 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
 
     if (periodType === 'semester') {
       if (selectedSemester === 'hk1') {
-        const start = `${startYear}-09-01`;
-        const end = `${startYear + 1}-01-15`;
+        const start = semesterSchedule.hk1Start;
+        const end = semesterSchedule.hk1End;
         return {
           type: 'semester',
-          label: `Học kỳ 1 Năm học ${schoolYear} (${formatViDate(start)} - ${formatViDate(end)})`,
+          label: `Học kỳ I Năm học ${selectedSchoolYear} (${formatViDate(start)} - ${formatViDate(end)})`,
           startDate: start,
           endDate: end,
+          schoolYear: selectedSchoolYear,
+          semester: 'hk1',
         };
       } else {
-        const start = `${endYear}-01-16`;
-        const end = `${endYear}-05-31`;
+        const start = semesterSchedule.hk2Start;
+        const end = semesterSchedule.hk2End;
         return {
           type: 'semester',
-          label: `Học kỳ 2 Năm học ${schoolYear} (${formatViDate(start)} - ${formatViDate(end)})`,
+          label: `Học kỳ II Năm học ${selectedSchoolYear} (${formatViDate(start)} - ${formatViDate(end)})`,
           startDate: start,
           endDate: end,
+          schoolYear: selectedSchoolYear,
+          semester: 'hk2',
         };
       }
     }
 
     if (periodType === 'year') {
-      const start = `${startYear}-09-01`;
-      const end = `${endYear}-05-31`;
+      const start = semesterSchedule.hk1Start;
+      const end = semesterSchedule.hk2End;
       return {
         type: 'year',
-        label: `Cả năm học ${schoolYear} (${formatViDate(start)} - ${formatViDate(end)})`,
+        label: `Cả năm học ${selectedSchoolYear} (${formatViDate(start)} - ${formatViDate(end)})`,
         startDate: start,
         endDate: end,
+        schoolYear: selectedSchoolYear,
       };
     }
 
@@ -175,6 +200,7 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
       label: `Khoảng ngày tùy chọn (${formatViDate(s)} - ${formatViDate(e)})`,
       startDate: s <= e ? s : e,
       endDate: s <= e ? e : s,
+      schoolYear: selectedSchoolYear,
     };
   }, [
     periodType,
@@ -185,27 +211,75 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
     customStartDate,
     customEndDate,
     today,
-    startYear,
-    endYear,
-    schoolYear,
+    semesterSchedule,
+    selectedSchoolYear,
   ]);
 
   // Preview real-time statistics
   const previewData = useMemo(() => {
     if (!isOpen) return { totalRecords: 0, activeStudents: 0 };
+    if (periodInfo.type === 'year') {
+      const hk1 = filterRecordsForSemester(
+        state.discipline || [],
+        selectedSchoolYear,
+        'hk1',
+        state.semesterConfigs,
+        state.config.schoolYear
+      );
+      const hk2 = filterRecordsForSemester(
+        state.discipline || [],
+        selectedSchoolYear,
+        'hk2',
+        state.semesterConfigs,
+        state.config.schoolYear
+      );
+      const combined = [...hk1, ...hk2];
+      const activeIds = new Set(combined.map((r) => r.studentId));
+      return {
+        totalRecords: combined.length,
+        activeStudents: activeIds.size,
+      };
+    }
+
+    const activeCfg = getEmulationConfigForClass(
+      state.classEmulationConfigs,
+      state.emulationConfig,
+      state.config.className,
+      selectedSchoolYear
+    );
     const { summaries, periodRecords } = calculateEmulationData(
       state.students,
       state.discipline || [],
       periodInfo.startDate,
       periodInfo.endDate,
-      state.config.className
+      state.config.className,
+      activeCfg,
+      periodInfo.type === 'semester' && periodInfo.semester
+        ? {
+            schoolYear: selectedSchoolYear,
+            semester: periodInfo.semester,
+            semesterConfigs: state.semesterConfigs,
+            fallbackSchoolYear: state.config.schoolYear,
+          }
+        : undefined
     );
     const active = summaries.filter((s) => s.positiveCount > 0 || s.negativeCount > 0).length;
     return {
       totalRecords: periodRecords.length,
       activeStudents: active,
     };
-  }, [isOpen, state.students, state.discipline, periodInfo, state.config.className]);
+  }, [
+    isOpen,
+    state.students,
+    state.discipline,
+    state.semesterConfigs,
+    state.classEmulationConfigs,
+    state.emulationConfig,
+    state.config.className,
+    state.config.schoolYear,
+    periodInfo,
+    selectedSchoolYear,
+  ]);
 
   if (!isOpen) return null;
 
@@ -296,7 +370,18 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#1E293B] shrink-0" />
-                <span className="font-semibold">Năm học: {schoolYear}</span>
+                <span className="font-semibold mr-1">Năm học:</span>
+                <select
+                  value={selectedSchoolYear}
+                  onChange={(e) => setSelectedSchoolYear(e.target.value)}
+                  className="px-2 py-0.5 bg-[#FCF4F6] border border-[#EDB5C1] rounded-lg text-xs font-black text-[#1E293B] cursor-pointer"
+                >
+                  {availableSchoolYears.map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-[#1E293B] shrink-0" />
@@ -468,9 +553,9 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
                         : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                     }`}
                   >
-                    <div className="font-black text-xs sm:text-sm text-gray-900">Học Kỳ 1</div>
+                    <div className="font-black text-xs sm:text-sm text-gray-900">Học Kỳ I (200đ)</div>
                     <div className="text-[11px] text-gray-500 mt-1">
-                      01/09/{startYear} - 15/01/{endYear}
+                      {formatViDate(semesterSchedule.hk1Start)} - {formatViDate(semesterSchedule.hk1End)}
                     </div>
                   </button>
 
@@ -483,9 +568,9 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
                         : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                     }`}
                   >
-                    <div className="font-black text-xs sm:text-sm text-gray-900">Học Kỳ 2</div>
+                    <div className="font-black text-xs sm:text-sm text-gray-900">Học Kỳ II (200đ)</div>
                     <div className="text-[11px] text-gray-500 mt-1">
-                      16/01/{endYear} - 31/05/{endYear}
+                      {formatViDate(semesterSchedule.hk2Start)} - {formatViDate(semesterSchedule.hk2End)}
                     </div>
                   </button>
                 </div>
@@ -493,10 +578,16 @@ export const EmulationExportModal: React.FC<EmulationExportModalProps> = ({
 
               {/* 4. Cả Năm */}
               {periodType === 'year' && (
-                <div className="p-2 text-xs text-gray-700 font-medium">
-                  Báo cáo toàn bộ sự việc thi đua trong cả năm học{' '}
-                  <strong className="text-gray-900">{schoolYear}</strong> (từ 01/09/{startYear} đến{' '}
-                  31/05/{endYear}).
+                <div className="p-2 text-xs text-gray-700 font-medium space-y-1">
+                  <div>
+                    Báo cáo cả năm học{' '}
+                    <strong className="text-gray-900">{selectedSchoolYear}</strong> (HK I:{' '}
+                    {formatViDate(semesterSchedule.hk1Start)} – {formatViDate(semesterSchedule.hk1End)} • HK II:{' '}
+                    {formatViDate(semesterSchedule.hk2Start)} – {formatViDate(semesterSchedule.hk2End)}).
+                  </div>
+                  <div className="text-[11px] text-emerald-700 font-semibold">
+                    ✓ Điểm Học kỳ I (200đ) và Học kỳ II (200đ) được xuất thành các cột tách riêng, không cộng dồn.
+                  </div>
                 </div>
               )}
 

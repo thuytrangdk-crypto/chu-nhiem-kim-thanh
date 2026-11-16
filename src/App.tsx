@@ -7,11 +7,16 @@ import {
   DisciplineRule,
   EmulationConfig,
   NoteRecord,
+  SchoolYearSemesterConfig,
   Student,
   UserRole,
 } from './types';
 import { DEFAULT_INITIAL_STATE } from './defaultData';
 import { formatViDate, generateId, getTodayStr } from './utils/helpers';
+import {
+  detectSemesterAndYearForDate,
+  normalizeSchoolYear,
+} from './utils/semesterUtils';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { LoginModal } from './components/LoginModal';
@@ -92,6 +97,26 @@ const mergeClassEmulationConfigs = (
   if (localMap) {
     for (const [key, localCfg] of Object.entries(localMap)) {
       merged[key] = mergeEmulationConfig(localCfg, merged[key])!;
+    }
+  }
+  return merged;
+};
+
+const mergeSemesterConfigs = (
+  localMap?: Record<string, SchoolYearSemesterConfig>,
+  remoteMap?: Record<string, SchoolYearSemesterConfig>
+): Record<string, SchoolYearSemesterConfig> => {
+  const merged: Record<string, SchoolYearSemesterConfig> = { ...(remoteMap || {}) };
+  if (localMap) {
+    for (const [key, localCfg] of Object.entries(localMap)) {
+      const remoteCfg = merged[key];
+      if (!remoteCfg) {
+        merged[key] = localCfg;
+      } else {
+        const localTime = new Date(localCfg.updatedAt || 0).getTime();
+        const remoteTime = new Date(remoteCfg.updatedAt || 0).getTime();
+        merged[key] = localTime >= remoteTime ? localCfg : remoteCfg;
+      }
     }
   }
   return merged;
@@ -248,6 +273,10 @@ export default function App() {
               prev.emulationConfig,
               remoteState.emulationConfig
             );
+            const mergedSemesterConfigs = mergeSemesterConfigs(
+              prev.semesterConfigs,
+              remoteState.semesterConfigs
+            );
             return {
               ...prev,
               ...remoteState,
@@ -258,6 +287,7 @@ export default function App() {
               boardNotices: normalizedNotices,
               classEmulationConfigs: mergedClassConfigs,
               emulationConfig: mergedEmulationConfig || prev.emulationConfig,
+              semesterConfigs: mergedSemesterConfigs,
             };
           });
           setSyncStatus((prev) => ({
@@ -278,11 +308,16 @@ export default function App() {
                 prev.emulationConfig,
                 updatedRemote.emulationConfig
               );
+              const mergedSemesterConfigs = mergeSemesterConfigs(
+                prev.semesterConfigs,
+                updatedRemote.semesterConfigs
+              );
               return {
                 ...prev,
                 ...updatedRemote,
                 classEmulationConfigs: mergedClassConfigs,
                 emulationConfig: mergedEmulationConfig || prev.emulationConfig,
+                semesterConfigs: mergedSemesterConfigs,
               };
             });
             setSyncStatus((prev) => ({
@@ -753,13 +788,8 @@ export default function App() {
     showToast('Đã đánh dấu tất cả có mặt cho ngày đã chọn');
   };
 
-  // Discipline Handlers (with auto sync attendance!)
+  // Discipline Handlers (with auto sync attendance & per-semester tagging!)
   const handleAddDiscipline = (record: Omit<DisciplineRecord, 'id'>) => {
-    const newDiscipline: DisciplineRecord = {
-      ...record,
-      id: generateId(),
-    };
-
     // Auto sync attendance if rule name matches late/unexcused
     const ruleLower = record.ruleName.toLowerCase();
     let syncedStatus: AttendanceStatus | null = null;
@@ -780,6 +810,18 @@ export default function App() {
     }
 
     setState((prev) => {
+      const detected = detectSemesterAndYearForDate(
+        record.date,
+        prev.semesterConfigs,
+        prev.config.schoolYear
+      );
+      const newDiscipline: DisciplineRecord = {
+        ...record,
+        schoolYear: normalizeSchoolYear(record.schoolYear || detected.schoolYear),
+        semester: record.semester || detected.semester,
+        id: generateId(),
+      };
+
       let nextAtt = prev.attendance;
       if (syncedStatus) {
         const idx = nextAtt.findIndex(
@@ -816,6 +858,31 @@ export default function App() {
     } else {
       showToast('Đã ghi nhận sự việc thi đua thành công');
     }
+  };
+
+  const handleUpdateDiscipline = (updatedRecord: DisciplineRecord) => {
+    setState((prev) => {
+      const detected = detectSemesterAndYearForDate(
+        updatedRecord.date,
+        prev.semesterConfigs,
+        prev.config.schoolYear
+      );
+      const normalizedRecord: DisciplineRecord = {
+        ...updatedRecord,
+        schoolYear: normalizeSchoolYear(updatedRecord.schoolYear || detected.schoolYear),
+        semester: updatedRecord.semester || detected.semester,
+        updatedAt: new Date().toISOString(),
+      };
+      const nextState: AppState = {
+        ...prev,
+        discipline: prev.discipline.map((d) =>
+          d.id === normalizedRecord.id ? normalizedRecord : d
+        ),
+      };
+      persistStateImmediately(nextState);
+      return nextState;
+    });
+    showToast('Đã cập nhật sự việc thi đua và tính lại điểm học kỳ');
   };
 
   const handleDeleteDiscipline = (recordId: string) => {
@@ -983,6 +1050,60 @@ export default function App() {
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Lỗi khi lưu cấu hình' };
+    }
+  };
+
+  const handleUpdateSemesterConfig = async (
+    semesterCfg: SchoolYearSemesterConfig
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const normalizedYear = normalizeSchoolYear(semesterCfg.schoolYear);
+      const savedCfg: SchoolYearSemesterConfig = {
+        ...semesterCfg,
+        schoolYear: normalizedYear,
+        updatedAt: new Date().toISOString(),
+      };
+
+      let nextStateToSave: AppState | null = null;
+      setState((prev) => {
+        const nextState: AppState = {
+          ...prev,
+          semesterConfigs: {
+            ...(prev.semesterConfigs || {}),
+            [normalizedYear]: savedCfg,
+          },
+        };
+        nextStateToSave = nextState;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+        } catch (e) {
+          console.error('LocalStorage save semester config error', e);
+        }
+        return nextState;
+      });
+
+      if (syncStatus.isTableReady && nextStateToSave) {
+        setSyncStatus((prev) => ({ ...prev, isSyncing: true }));
+        const res = await supabaseService.saveState(nextStateToSave);
+        setSyncStatus((prev) => ({
+          ...prev,
+          isSyncing: false,
+          lastSyncedAt: res.success
+            ? new Date().toLocaleTimeString('vi-VN')
+            : prev.lastSyncedAt,
+          errorMessage: res.error || null,
+        }));
+        if (!res.success) {
+          return {
+            success: false,
+            error: res.error || 'Lỗi khi đồng bộ lịch học kỳ lên Supabase',
+          };
+        }
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Lỗi khi lưu lịch học kỳ' };
     }
   };
 
@@ -1199,6 +1320,7 @@ export default function App() {
                   onUpdateConfig={handleUpdateConfig}
                   onUpdateDisciplineRules={handleUpdateDisciplineRules}
                   onUpdateEmulationConfig={handleUpdateEmulationConfig}
+                  onUpdateSemesterConfig={handleUpdateSemesterConfig}
                   onResetData={handleResetData}
                   onClearAllData={handleClearAllData}
                   onImportBackup={handleImportBackup}
@@ -1270,9 +1392,22 @@ export default function App() {
                 setSelectedStudentId(null);
                 setCurrentView('students');
               }}
+              onSaveStudentUpdate={(updatedStudent) => {
+                setState((prev) => {
+                  const nextState: AppState = {
+                    ...prev,
+                    students: prev.students.map((st) =>
+                      st.id === updatedStudent.id ? updatedStudent : st
+                    ),
+                  };
+                  persistStateImmediately(nextState);
+                  return nextState;
+                });
+              }}
               onUpdateAvatar={handleUpdateAvatar}
               onSaveGrades={handleSaveGrades}
               onAddDiscipline={handleAddDiscipline}
+              onUpdateDiscipline={handleUpdateDiscipline}
               onDeleteDiscipline={handleDeleteDiscipline}
               onAddNote={handleAddNote}
               onDeleteNote={handleDeleteNote}

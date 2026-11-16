@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppState, DisciplineRule, EmulationConfig } from '../types';
+import { AppState, DisciplineRule, EmulationConfig, SchoolYearSemesterConfig } from '../types';
 import {
   Settings,
   Save,
@@ -32,6 +32,7 @@ interface SettingsViewProps {
   onUpdateConfig: (newConfig: Partial<AppState['config']>) => void;
   onUpdateDisciplineRules: (rules: DisciplineRule[]) => void;
   onUpdateEmulationConfig?: (newConfig: EmulationConfig) => Promise<{ success: boolean; error?: string }> | void;
+  onUpdateSemesterConfig?: (cfg: SchoolYearSemesterConfig) => Promise<{ success: boolean; error?: string }> | void;
   onResetData: () => void;
   onClearAllData: () => void;
   onImportBackup: (backupState: AppState) => void;
@@ -45,6 +46,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateConfig,
   onUpdateDisciplineRules,
   onUpdateEmulationConfig,
+  onUpdateSemesterConfig,
   onResetData,
   onClearAllData,
   onImportBackup,
@@ -640,6 +642,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <EmulationScaleSettings
               state={state}
               onUpdateEmulationConfig={onUpdateEmulationConfig || (() => {})}
+              onUpdateSemesterConfig={onUpdateSemesterConfig}
               onShowToast={onShowToast}
             />
           )}

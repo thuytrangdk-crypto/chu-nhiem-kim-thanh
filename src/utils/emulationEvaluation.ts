@@ -7,18 +7,18 @@ import {
 } from '../types';
 
 export const DEFAULT_EMULATION_CONFIG: EmulationConfig = {
-  // Điểm khởi đầu của mỗi học sinh trong một kỳ (mặc định 100 theo đúng hệ thống hiện có)
-  initialPoints: 100,
-  periodType: 'month',
+  // Điểm khởi đầu của mỗi học sinh trong một học kỳ (mặc định 200 điểm/học kỳ)
+  initialPoints: 200,
+  periodType: 'semester',
 
   // Điểm tối thiểu, điểm tối đa; có thể bật/tắt giới hạn
-  enableMinScore: true,
+  enableMinScore: false,
   minScore: 0,
   enableMaxScore: false,
-  maxScore: 120,
+  maxScore: 220,
 
-  // Quy tắc tổng hợp học kỳ / cả năm
-  aggregationMethod: 'single_initial', // Điểm khởi đầu 1 lần cho cả kỳ + Tổng điểm cộng toàn kỳ - Tổng điểm trừ toàn kỳ
+  // Quy tắc tổng hợp học kỳ
+  aggregationMethod: 'single_initial', // Điểm khởi đầu 1 lần cho cả học kỳ + Tổng điểm cộng - Tổng điểm trừ
 
   // 4 mức xếp loại rèn luyện chuẩn theo Thông tư Bộ GD&ĐT
   conductTiers: [
@@ -199,7 +199,7 @@ export function evaluateStudentEmulation(
   const initialPoints =
     config.initialPoints !== undefined && Number.isFinite(config.initialPoints)
       ? config.initialPoints
-      : 100;
+      : 200;
   // Điểm thi đua = Điểm ban đầu + Tổng điểm thưởng − Tổng điểm vi phạm
   const rawTotalPoints = initialPoints + plusPoints - minusPoints;
   // Không tự chặn điểm tổng ở 0 hoặc điểm ban đầu
@@ -266,9 +266,12 @@ export function getEmulationConfigForClass(
   className: string,
   schoolYear: string
 ): EmulationConfig {
+  const normalizedYear = (schoolYear || '').trim().replace(/(\d{4})\s*[-–]\s*(\d{4})/, '$1 - $2');
   const key = `${className}_${schoolYear}`;
-  if (classConfigs && classConfigs[key]) {
-    return classConfigs[key];
+  const normalizedKey = `${className}_${normalizedYear}`;
+  if (classConfigs) {
+    if (classConfigs[key]) return classConfigs[key];
+    if (classConfigs[normalizedKey]) return classConfigs[normalizedKey];
   }
   if (activeConfig) {
     return activeConfig;

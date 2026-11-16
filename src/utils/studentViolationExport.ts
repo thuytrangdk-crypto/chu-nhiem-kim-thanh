@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
-import { DisciplineRecord, Student } from '../types';
+import { DisciplineRecord, SchoolYearSemesterConfig, Student } from '../types';
 import { formatViDate } from './helpers';
+import { getRecordScope, getSemesterShortLabel } from './semesterUtils';
 
 export interface ExportStudentViolationParams {
   student: Student;
@@ -14,6 +15,17 @@ export interface ExportStudentViolationParams {
   basePoints: number;
   finalPoints: number;
   suggestedRating: string;
+  semesterConfigs?: Record<string, SchoolYearSemesterConfig>;
+  hk1Summary?: {
+    basePoints: number;
+    finalPoints: number;
+    suggestedRating: string;
+  };
+  hk2Summary?: {
+    basePoints: number;
+    finalPoints: number;
+    suggestedRating: string;
+  };
 }
 
 /**
@@ -32,7 +44,15 @@ export async function exportStudentViolationsToExcel({
   basePoints,
   finalPoints,
   suggestedRating,
-}: ExportStudentViolationParams): Promise<{ success: boolean; fileName: string; totalViolations: number }> {
+  semesterConfigs,
+  hk1Summary,
+  hk2Summary,
+}: ExportStudentViolationParams): Promise<{
+  success: boolean;
+  fileName: string;
+  totalViolations: number;
+  buffer?: ArrayBuffer;
+}> {
   // 1. Lọc các sự việc vi phạm (điểm trừ < 0)
   const violationRecords = records.filter((r) => (r.points || 0) < 0);
   
@@ -154,16 +174,29 @@ export async function exportStudentViolationsToExcel({
   infoRow2.getCell(5).font = { name: 'Calibri', size: 10, bold: true };
 
   const infoRow3 = ws.getRow(9);
-  infoRow3.getCell(1).value = 'Điểm chuẩn kỳ:';
-  infoRow3.getCell(1).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF475569' } };
-  infoRow3.getCell(2).value = `${basePoints} điểm`;
-  infoRow3.getCell(2).font = { name: 'Calibri', size: 10, bold: true };
-  ws.mergeCells('B9:C9');
+  if (selectedPeriod === 'year' && hk1Summary && hk2Summary) {
+    infoRow3.getCell(1).value = 'Điểm Học kỳ I:';
+    infoRow3.getCell(1).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF475569' } };
+    infoRow3.getCell(2).value = `${hk1Summary.finalPoints}/${hk1Summary.basePoints}đ (${hk1Summary.suggestedRating})`;
+    infoRow3.getCell(2).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF0369A1' } };
+    ws.mergeCells('B9:C9');
 
-  infoRow3.getCell(4).value = 'Điểm thi đua còn lại:';
-  infoRow3.getCell(4).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF475569' } };
-  infoRow3.getCell(5).value = `${finalPoints} điểm (${suggestedRating})`;
-  infoRow3.getCell(5).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF059669' } };
+    infoRow3.getCell(4).value = 'Điểm Học kỳ II:';
+    infoRow3.getCell(4).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF475569' } };
+    infoRow3.getCell(5).value = `${hk2Summary.finalPoints}/${hk2Summary.basePoints}đ (${hk2Summary.suggestedRating})`;
+    infoRow3.getCell(5).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF059669' } };
+  } else {
+    infoRow3.getCell(1).value = 'Điểm chuẩn kỳ:';
+    infoRow3.getCell(1).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF475569' } };
+    infoRow3.getCell(2).value = `${basePoints} điểm`;
+    infoRow3.getCell(2).font = { name: 'Calibri', size: 10, bold: true };
+    ws.mergeCells('B9:C9');
+
+    infoRow3.getCell(4).value = 'Điểm thi đua còn lại:';
+    infoRow3.getCell(4).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF475569' } };
+    infoRow3.getCell(5).value = `${finalPoints}/${basePoints} điểm (${suggestedRating})`;
+    infoRow3.getCell(5).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF059669' } };
+  }
 
   // Khung viền cho khối thông tin
   [7, 8, 9].forEach((r) => {
@@ -237,13 +270,16 @@ export async function exportStudentViolationsToExcel({
       row.height = 24;
 
       const penaltyScore = rec.points < 0 ? rec.points : -rec.points;
+      const scope = getRecordScope(rec, semesterConfigs, schoolYear);
+      const semBadge = `[${getSemesterShortLabel(scope.semester)}]`;
+      const noteDisplay = rec.note ? `${semBadge} ${rec.note}` : semBadge;
 
       row.values = [
         idx + 1, // STT
         formatViDate(rec.date), // Ngày xảy ra
         rec.ruleName, // Nội dung vi phạm
         penaltyScore, // Điểm bị trừ (hiển thị số âm)
-        rec.note || '', // Ghi chú
+        noteDisplay, // Ghi chú + Học kỳ
       ];
 
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
@@ -307,7 +343,10 @@ export async function exportStudentViolationsToExcel({
   summaryRow.getCell(4).font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFE11D48' } };
   summaryRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' };
 
-  summaryRow.getCell(5).value = `Điểm thi đua còn lại: ${finalPoints}đ`;
+  summaryRow.getCell(5).value =
+    selectedPeriod === 'year' && hk1Summary && hk2Summary
+      ? `HK I: ${hk1Summary.finalPoints}/${hk1Summary.basePoints}đ • HK II: ${hk2Summary.finalPoints}/${hk2Summary.basePoints}đ`
+      : `Điểm thi đua còn lại: ${finalPoints}/${basePoints}đ`;
   summaryRow.getCell(5).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF0F172A' } };
   summaryRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'left' };
 
@@ -403,5 +442,6 @@ export async function exportStudentViolationsToExcel({
     success: true,
     fileName,
     totalViolations,
+    buffer: buffer as ArrayBuffer,
   };
 }

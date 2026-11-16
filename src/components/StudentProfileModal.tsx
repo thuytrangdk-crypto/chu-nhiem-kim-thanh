@@ -4,6 +4,8 @@ import {
   ConductGrade,
   DisciplineRecord,
   NoteRecord,
+  SemesterFilter,
+  SemesterId,
   Student,
 } from '../types';
 import {
@@ -25,6 +27,7 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Star,
   Edit2,
   History,
@@ -32,7 +35,6 @@ import {
 } from 'lucide-react';
 import {
   calculateAverageGrade,
-  calculateTotalPoints,
   formatViDate,
   getConductFromGrade,
   getTodayStr,
@@ -42,8 +44,24 @@ import {
 import { DEFAULT_DISCIPLINE_RULES } from '../defaultData';
 import {
   getEmulationConfigForClass,
-  evaluateStudentEmulation,
 } from '../utils/emulationEvaluation';
+import {
+  detectSemesterAndYearForDate,
+  evaluateSemesterEmulation,
+  filterRecordsForSemester,
+  getActiveSemesterForDate,
+  getAllAvailableSchoolYears,
+  getMonthsInSemesterRange,
+  getOfficialConductForSemester,
+  getOfficialConductKey,
+  getRecordScope,
+  getSemesterConfigForYear,
+  getSemesterLabel,
+  getSemesterShortLabel,
+  getSuggestedRatingBadgeClass,
+  inferNaturalSchoolYearFromDate,
+  normalizeSchoolYear,
+} from '../utils/semesterUtils';
 import { exportStudentViolationsToExcel } from '../utils/studentViolationExport';
 
 interface StudentProfileModalProps {
@@ -52,9 +70,11 @@ interface StudentProfileModalProps {
   isTeacher: boolean;
   onClose: () => void;
   onEditStudent: (s: Student) => void;
+  onSaveStudentUpdate?: (s: Student) => void;
   onUpdateAvatar: (studentId: string, base64: string) => void;
   onSaveGrades: (studentId: string, grades: Record<string, number>) => void;
   onAddDiscipline: (record: Omit<DisciplineRecord, 'id'>) => void;
+  onUpdateDiscipline?: (record: DisciplineRecord) => void;
   onDeleteDiscipline: (id: string) => void;
   onAddNote: (record: Omit<NoteRecord, 'id'>) => void;
   onDeleteNote: (id: string) => void;
@@ -69,9 +89,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   isTeacher,
   onClose,
   onEditStudent,
+  onSaveStudentUpdate,
   onUpdateAvatar,
   onSaveGrades,
   onAddDiscipline,
+  onUpdateDiscipline,
   onDeleteDiscipline,
   onAddNote,
   onDeleteNote,
@@ -96,18 +118,32 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     student?.grades || {}
   );
 
-  // Discipline record form state (Teacher only)
-  const [disciplineDate, setDisciplineDate] = useState<string>(getTodayStr());
+  const todayStr = getTodayStr();
+  const defaultSchoolYear = normalizeSchoolYear(
+    state.config.schoolYear || inferNaturalSchoolYearFromDate(todayStr)
+  );
+  const ongoingSemester = getActiveSemesterForDate(
+    todayStr,
+    state.semesterConfigs,
+    defaultSchoolYear
+  );
+
+  // Discipline record form state (Teacher only - supports Add & Edit)
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [disciplineDate, setDisciplineDate] = useState<string>(todayStr);
   const [selectedRuleIndex, setSelectedRuleIndex] = useState<number>(0);
   const [customRuleName, setCustomRuleName] = useState<string>('');
   const [customPoints, setCustomPoints] = useState<number>(-2);
   const [disciplineNote, setDisciplineNote] = useState<string>('');
+  const [outOfRangeSemesterOverride, setOutOfRangeSemesterOverride] =
+    useState<SemesterId | ''>('');
 
-  // Selected evaluation period: 'all' | 'year' | 'hk1' | 'hk2' | 'YYYY-MM'
-  const currentMonthStr = `${new Date().getFullYear()}-${String(
-    new Date().getMonth() + 1
-  ).padStart(2, '0')}`;
-  const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonthStr);
+  // Selected evaluation period filters: Năm học + Học kỳ ('hk1' | 'hk2' | 'all') + Tháng ('all' | 'YYYY-MM')
+  const [selectedSchoolYear, setSelectedSchoolYear] =
+    useState<string>(defaultSchoolYear);
+  const [selectedSemesterFilter, setSelectedSemesterFilter] =
+    useState<SemesterFilter>(ongoingSemester);
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
 
   // Note form state (Teacher only)
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -120,126 +156,250 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   if (!student) return null;
 
   // Personal discipline records
-  const personalDiscipline = state.discipline.filter(
-    (d) => d.studentId === student.id
+  const personalDiscipline = useMemo(
+    () => state.discipline.filter((d) => d.studentId === student.id),
+    [state.discipline, student.id]
   );
-  const totalPoints = calculateTotalPoints(state.discipline, student.id);
 
-  // Available evaluation periods list
-  const periodOptions = useMemo(() => {
-    return [
-      { id: 'all', label: 'Tất cả thời gian' },
-      { id: '2026-09', label: 'Tháng 9/2026' },
-      { id: '2026-10', label: 'Tháng 10/2026' },
-      { id: '2026-11', label: 'Tháng 11/2026' },
-      { id: '2026-12', label: 'Tháng 12/2026' },
-      { id: '2027-01', label: 'Tháng 1/2027' },
-      { id: '2027-02', label: 'Tháng 2/2027' },
-      { id: '2027-03', label: 'Tháng 3/2027' },
-      { id: '2027-04', label: 'Tháng 4/2027' },
-      { id: '2027-05', label: 'Tháng 5/2027' },
-      { id: 'hk1', label: 'Học kỳ I' },
-      { id: 'hk2', label: 'Học kỳ II' },
-      { id: 'year', label: 'Cả năm học (2026 - 2027)' },
-    ];
-  }, []);
+  // Available school years & configured semester schedule for selected school year
+  const availableSchoolYears = useMemo(
+    () => getAllAvailableSchoolYears(state, todayStr),
+    [state, todayStr]
+  );
 
-  // Filter discipline records by period
-  const displayedDiscipline = useMemo(() => {
-    if (selectedPeriod === 'all' || selectedPeriod === 'year') {
-      return personalDiscipline;
+  const selectedYearSchedule = useMemo(
+    () => getSemesterConfigForYear(state.semesterConfigs, selectedSchoolYear),
+    [state.semesterConfigs, selectedSchoolYear]
+  );
+
+  const availableMonthsInScope = useMemo(
+    () => getMonthsInSemesterRange(selectedYearSchedule, selectedSemesterFilter),
+    [selectedYearSchedule, selectedSemesterFilter]
+  );
+
+  // Reset month filter if switching year/semester and old month isn't in new scope
+  useEffect(() => {
+    if (
+      selectedMonthFilter !== 'all' &&
+      !availableMonthsInScope.some((m) => m.value === selectedMonthFilter)
+    ) {
+      setSelectedMonthFilter('all');
     }
-    if (selectedPeriod === 'hk1') {
-      return personalDiscipline.filter((d) => {
-        const m = d.date?.substring(5, 7);
-        return ['09', '10', '11', '12', '01'].includes(m);
-      });
-    }
-    if (selectedPeriod === 'hk2') {
-      return personalDiscipline.filter((d) => {
-        const m = d.date?.substring(5, 7);
-        return ['02', '03', '04', '05'].includes(m);
-      });
-    }
-    return personalDiscipline.filter(
-      (d) => d.date && d.date.startsWith(selectedPeriod)
-    );
-  }, [personalDiscipline, selectedPeriod]);
+  }, [availableMonthsInScope, selectedMonthFilter]);
 
-  // Breakdown of bonus and penalty points in the selected period
-  const { periodBonusPoints, periodPenaltyPoints, periodNetPoints } = useMemo(() => {
-    let bonus = 0;
-    let penalty = 0;
-    displayedDiscipline.forEach((d) => {
-      const p = d.points || 0;
-      if (p > 0) bonus += p;
-      else if (p < 0) penalty += Math.abs(p);
-    });
-    return {
-      periodBonusPoints: bonus,
-      periodPenaltyPoints: penalty,
-      periodNetPoints: bonus - penalty,
-    };
-  }, [displayedDiscipline]);
-
-  // Active emulation config for current class & year
+  // Active emulation config for current class & selected year
   const activeEmulationConfig = useMemo(() => {
     return getEmulationConfigForClass(
       state.classEmulationConfigs,
       state.emulationConfig,
       state.config.className,
+      selectedSchoolYear
+    );
+  }, [
+    state.classEmulationConfigs,
+    state.emulationConfig,
+    state.config.className,
+    selectedSchoolYear,
+  ]);
+
+  // Ongoing semester evaluation (for Top Header Stat Pill & Tab 1 overview - always 200pt base)
+  const ongoingSemesterEval = useMemo(() => {
+    return evaluateSemesterEmulation(
+      student.id,
+      state.discipline,
+      defaultSchoolYear,
+      ongoingSemester,
+      state.semesterConfigs,
+      getEmulationConfigForClass(
+        state.classEmulationConfigs,
+        state.emulationConfig,
+        state.config.className,
+        defaultSchoolYear
+      ),
       state.config.schoolYear
     );
   }, [
+    student.id,
+    state.discipline,
+    defaultSchoolYear,
+    ongoingSemester,
+    state.semesterConfigs,
     state.classEmulationConfigs,
     state.emulationConfig,
     state.config.className,
     state.config.schoolYear,
   ]);
 
-  // Evaluate student emulation using configured scale and conduct tiers
-  const studentEmulation = useMemo(() => {
-    return evaluateStudentEmulation(
+  // Independent HK I & HK II evaluations for selectedSchoolYear (NEVER merged or summed to 400!)
+  const hk1Emulation = useMemo(() => {
+    return evaluateSemesterEmulation(
       student.id,
-      displayedDiscipline,
-      activeEmulationConfig
+      state.discipline,
+      selectedSchoolYear,
+      'hk1',
+      state.semesterConfigs,
+      activeEmulationConfig,
+      state.config.schoolYear,
+      selectedSemesterFilter === 'hk1' ? selectedMonthFilter : undefined
     );
-  }, [student.id, displayedDiscipline, activeEmulationConfig]);
+  }, [
+    student.id,
+    state.discipline,
+    selectedSchoolYear,
+    state.semesterConfigs,
+    activeEmulationConfig,
+    state.config.schoolYear,
+    selectedSemesterFilter,
+    selectedMonthFilter,
+  ]);
+
+  const hk2Emulation = useMemo(() => {
+    return evaluateSemesterEmulation(
+      student.id,
+      state.discipline,
+      selectedSchoolYear,
+      'hk2',
+      state.semesterConfigs,
+      activeEmulationConfig,
+      state.config.schoolYear,
+      selectedSemesterFilter === 'hk2' ? selectedMonthFilter : undefined
+    );
+  }, [
+    student.id,
+    state.discipline,
+    selectedSchoolYear,
+    state.semesterConfigs,
+    activeEmulationConfig,
+    state.config.schoolYear,
+    selectedSemesterFilter,
+    selectedMonthFilter,
+  ]);
+
+  const currentSemesterEval =
+    selectedSemesterFilter === 'hk2' ? hk2Emulation : hk1Emulation;
+
+  const hk1Official = getOfficialConductForSemester(student, selectedSchoolYear, 'hk1');
+  const hk2Official = getOfficialConductForSemester(student, selectedSchoolYear, 'hk2');
+  const ongoingOfficial = getOfficialConductForSemester(
+    student,
+    defaultSchoolYear,
+    ongoingSemester
+  );
+  const activeSemesterOfficial =
+    selectedSemesterFilter === 'hk2' ? hk2Official : hk1Official;
+
+  // Filter discipline records strictly by selectedSchoolYear + selectedSemesterFilter + optional month
+  const displayedDiscipline = useMemo(() => {
+    let filtered: DisciplineRecord[] = [];
+    if (selectedSemesterFilter === 'all') {
+      const hk1List = filterRecordsForSemester(
+        personalDiscipline,
+        selectedSchoolYear,
+        'hk1',
+        state.semesterConfigs,
+        state.config.schoolYear
+      );
+      const hk2List = filterRecordsForSemester(
+        personalDiscipline,
+        selectedSchoolYear,
+        'hk2',
+        state.semesterConfigs,
+        state.config.schoolYear
+      );
+      filtered = [...hk1List, ...hk2List];
+    } else {
+      filtered = filterRecordsForSemester(
+        personalDiscipline,
+        selectedSchoolYear,
+        selectedSemesterFilter,
+        state.semesterConfigs,
+        state.config.schoolYear,
+        selectedMonthFilter
+      );
+    }
+    return [...filtered].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }, [
+    personalDiscipline,
+    selectedSchoolYear,
+    selectedSemesterFilter,
+    selectedMonthFilter,
+    state.semesterConfigs,
+    state.config.schoolYear,
+  ]);
+
+  // Detect semester & year for the date currently typed in the Add/Edit form
+  const formDateDetection = useMemo(() => {
+    return detectSemesterAndYearForDate(
+      disciplineDate || todayStr,
+      state.semesterConfigs,
+      selectedSchoolYear
+    );
+  }, [disciplineDate, todayStr, state.semesterConfigs, selectedSchoolYear]);
 
   // Export violation Excel report state & logic
   const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   const periodBadgeLabel = useMemo(() => {
-    if (selectedPeriod === 'all') return 'Tất cả';
-    if (selectedPeriod === 'year') return 'Cả năm';
-    if (selectedPeriod === 'hk1') return 'HK1';
-    if (selectedPeriod === 'hk2') return 'HK2';
-    if (selectedPeriod.startsWith('20')) {
-      const parts = selectedPeriod.split('-');
+    if (selectedSemesterFilter === 'all') return 'Cả năm';
+    if (selectedMonthFilter !== 'all' && selectedMonthFilter.startsWith('20')) {
+      const parts = selectedMonthFilter.split('-');
       return `T${parseInt(parts[1], 10)}/${parts[0].slice(2)}`;
     }
-    return selectedPeriod;
-  }, [selectedPeriod]);
+    return selectedSemesterFilter === 'hk1' ? 'HK I' : 'HK II';
+  }, [selectedSemesterFilter, selectedMonthFilter]);
 
   const handleExportViolationExcel = async () => {
     if (!student) return;
     try {
       setIsExportingExcel(true);
-      const activePeriodOption = periodOptions.find((p) => p.id === selectedPeriod);
-      const periodLabel = activePeriodOption?.label || selectedPeriod;
+      let periodLabel = '';
+      if (selectedSemesterFilter === 'all') {
+        periodLabel = `Cả năm học ${selectedSchoolYear} (HK I & HK II tách riêng)`;
+      } else if (selectedMonthFilter !== 'all') {
+        const [y, m] = selectedMonthFilter.split('-');
+        periodLabel = `Tháng ${parseInt(m, 10)}/${y} (${getSemesterLabel(
+          selectedSemesterFilter
+        )} - ${selectedSchoolYear})`;
+      } else {
+        periodLabel = `${getSemesterLabel(
+          selectedSemesterFilter
+        )} - Năm học ${selectedSchoolYear}`;
+      }
 
       const res = await exportStudentViolationsToExcel({
         student,
         className: state.config.className || '6A8',
         schoolName: state.config.schoolName || 'Trường THCS Nguyễn Huệ',
-        schoolYear: state.config.schoolYear || '2026-2027',
+        schoolYear: selectedSchoolYear,
         teacherName: state.config.teacherName || 'Cô Lê Thị Kim Thanh',
-        selectedPeriod,
+        selectedPeriod:
+          selectedSemesterFilter === 'all'
+            ? 'year'
+            : selectedMonthFilter !== 'all'
+            ? selectedMonthFilter
+            : selectedSemesterFilter,
         periodLabel,
         records: displayedDiscipline,
-        basePoints: studentEmulation.initialPoints,
-        finalPoints: studentEmulation.finalTotalPoints,
-        suggestedRating: studentEmulation.suggestedRating,
+        basePoints: currentSemesterEval.initialPoints,
+        finalPoints: currentSemesterEval.finalTotalPoints,
+        suggestedRating: currentSemesterEval.suggestedRating,
+        semesterConfigs: state.semesterConfigs,
+        hk1Summary:
+          selectedSemesterFilter === 'all'
+            ? {
+                basePoints: hk1Emulation.initialPoints,
+                finalPoints: hk1Emulation.finalTotalPoints,
+                suggestedRating: hk1Emulation.suggestedRating,
+              }
+            : undefined,
+        hk2Summary:
+          selectedSemesterFilter === 'all'
+            ? {
+                basePoints: hk2Emulation.initialPoints,
+                finalPoints: hk2Emulation.finalTotalPoints,
+                suggestedRating: hk2Emulation.suggestedRating,
+              }
+            : undefined,
       });
 
       if (res.success) {
@@ -257,31 +417,54 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     }
   };
 
-  // Official conduct evaluation modal & form state (Teacher only)
+  // Official conduct evaluation modal & form state (Teacher only - per semester!)
   const [isOfficialModalOpen, setIsOfficialModalOpen] = useState(false);
-  const [officialRating, setOfficialRating] = useState<ConductGrade>(
-    student.officialConduct?.rating ||
-      (studentEmulation.suggestedRating as ConductGrade)
-  );
-  const [officialReason, setOfficialReason] = useState(
-    student.officialConduct?.reason || ''
-  );
+  const [officialTargetSemester, setOfficialTargetSemester] =
+    useState<SemesterId>('hk1');
+  const [officialRating, setOfficialRating] = useState<ConductGrade>('Tốt');
+  const [officialReason, setOfficialReason] = useState('');
+
+  const openOfficialModalForSemester = (sem: SemesterId) => {
+    const existing = getOfficialConductForSemester(student, selectedSchoolYear, sem);
+    const suggested =
+      sem === 'hk2' ? hk2Emulation.suggestedRating : hk1Emulation.suggestedRating;
+    setOfficialTargetSemester(sem);
+    setOfficialRating(existing?.rating || suggested);
+    setOfficialReason(existing?.reason || '');
+    setIsOfficialModalOpen(true);
+  };
 
   const handleConfirmOfficialConduct = (e: React.FormEvent) => {
     e.preventDefault();
+    const key = getOfficialConductKey(selectedSchoolYear, officialTargetSemester);
+    const evaluation = {
+      rating: officialRating,
+      reason: officialReason.trim() || undefined,
+      confirmedBy: state.config.teacherName || 'GVCN',
+      confirmedAt: new Date().toLocaleString('vi-VN'),
+    };
     const updatedStudent: Student = {
       ...student,
-      officialConduct: {
-        rating: officialRating,
-        reason: officialReason.trim() || undefined,
-        confirmedBy: state.config.teacherName || 'GVCN',
-        confirmedAt: new Date().toLocaleString('vi-VN'),
+      officialConduct:
+        officialTargetSemester === ongoingSemester &&
+        selectedSchoolYear === defaultSchoolYear
+          ? evaluation
+          : student.officialConduct,
+      officialConductByPeriod: {
+        ...(student.officialConductByPeriod || {}),
+        [key]: evaluation,
       },
     };
-    onEditStudent(updatedStudent);
+    if (onSaveStudentUpdate) {
+      onSaveStudentUpdate(updatedStudent);
+    } else {
+      onEditStudent(updatedStudent);
+    }
     setIsOfficialModalOpen(false);
     onShowToast(
-      `Đã xác nhận kết quả đánh giá rèn luyện chính thức: ${officialRating}!`
+      `Đã xác nhận đánh giá rèn luyện chính thức ${getSemesterLabel(
+        officialTargetSemester
+      )} (${selectedSchoolYear}): ${officialRating}!`
     );
   };
 
@@ -322,7 +505,36 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
     onShowToast('Đã lưu bảng điểm học tập');
   };
 
-  const handleCreateDiscipline = (e: React.FormEvent) => {
+  const handleStartEditDiscipline = (rec: DisciplineRecord) => {
+    setEditingRecordId(rec.id);
+    setDisciplineDate(rec.date || todayStr);
+    setDisciplineNote(rec.note || '');
+    setOutOfRangeSemesterOverride('');
+    const matchedIdx = rulesList.findIndex(
+      (r) => r.name === rec.ruleName && r.points === rec.points
+    );
+    if (matchedIdx !== -1 && rulesList[matchedIdx].name !== 'Khác') {
+      setSelectedRuleIndex(matchedIdx);
+      setCustomRuleName('');
+    } else {
+      const otherIdx = rulesList.findIndex((r) => r.name === 'Khác');
+      setSelectedRuleIndex(otherIdx !== -1 ? otherIdx : 0);
+      setCustomRuleName(rec.ruleName);
+      setCustomPoints(rec.points);
+    }
+  };
+
+  const handleCancelEditDiscipline = () => {
+    setEditingRecordId(null);
+    setDisciplineDate(todayStr);
+    setSelectedRuleIndex(0);
+    setCustomRuleName('');
+    setCustomPoints(-2);
+    setDisciplineNote('');
+    setOutOfRangeSemesterOverride('');
+  };
+
+  const handleCreateOrUpdateDiscipline = (e: React.FormEvent) => {
     e.preventDefault();
     const ruleObj = rulesList[selectedRuleIndex] || rulesList[0];
     let finalRuleName = ruleObj.name;
@@ -335,18 +547,57 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       finalType = customPoints >= 0 ? 'plus' : 'minus';
     }
 
-    onAddDiscipline({
-      studentId: student.id,
-      date: disciplineDate || getTodayStr(),
-      ruleName: finalRuleName,
-      points: finalPoints,
-      note: disciplineNote.trim(),
-      type: finalType,
-    });
+    const targetDate = disciplineDate || todayStr;
+    const detected = detectSemesterAndYearForDate(
+      targetDate,
+      state.semesterConfigs,
+      selectedSchoolYear
+    );
 
-    setDisciplineNote('');
-    setCustomRuleName('');
-    onShowToast('Đã lưu ghi nhận sự việc thi đua');
+    const assignedSchoolYear = detected.isWithinConfiguredRange
+      ? detected.schoolYear
+      : selectedSchoolYear;
+    const assignedSemester: SemesterId = detected.isWithinConfiguredRange
+      ? detected.semester
+      : outOfRangeSemesterOverride || detected.semester;
+
+    if (editingRecordId && onUpdateDiscipline) {
+      const existing = personalDiscipline.find((r) => r.id === editingRecordId);
+      onUpdateDiscipline({
+        ...(existing || { id: editingRecordId, studentId: student.id }),
+        id: editingRecordId,
+        studentId: student.id,
+        date: targetDate,
+        ruleName: finalRuleName,
+        points: finalPoints,
+        note: disciplineNote.trim(),
+        type: finalType,
+        schoolYear: assignedSchoolYear,
+        semester: assignedSemester,
+      });
+      handleCancelEditDiscipline();
+    } else {
+      onAddDiscipline({
+        studentId: student.id,
+        date: targetDate,
+        ruleName: finalRuleName,
+        points: finalPoints,
+        note: disciplineNote.trim(),
+        type: finalType,
+        schoolYear: assignedSchoolYear,
+        semester: assignedSemester,
+      });
+      setDisciplineNote('');
+      setCustomRuleName('');
+      setOutOfRangeSemesterOverride('');
+      if (!detected.isWithinConfiguredRange) {
+        onShowToast(
+          `Đã lưu vào ${getSemesterLabel(
+            assignedSemester
+          )} (${assignedSchoolYear}) dù ngày nằm ngoài lịch học kỳ`
+        );
+      }
+    }
   };
 
   const handleCreateNote = (e: React.FormEvent) => {
@@ -528,16 +779,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 </span>
               </div>
               <div className="px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center gap-1 text-[11px]">
-                <span className="text-gray-500 font-medium">Nề nếp:</span>
+                <span className="text-gray-500 font-medium">
+                  Nề nếp ({getSemesterShortLabel(ongoingSemester)}):
+                </span>
                 <span className="font-black text-emerald-700">
-                  {totalPoints >= 0 ? `+${totalPoints}` : totalPoints}đ
+                  {ongoingSemesterEval.finalTotalPoints}/{ongoingSemesterEval.initialPoints}đ
                 </span>
               </div>
               <div className="px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-1 text-[11px]">
                 <span className="text-gray-500 font-medium">Hạnh kiểm:</span>
                 <span className="font-black text-amber-700">
-                  {student.officialConduct?.rating ||
-                    studentEmulation.suggestedRating ||
+                  {ongoingOfficial?.rating ||
+                    ongoingSemesterEval.suggestedRating ||
                     'Tốt'}
                 </span>
               </div>
@@ -640,15 +893,19 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-gray-200/60">
-                      <span className="text-gray-500">Đánh giá rèn luyện chính thức:</span>
+                      <span className="text-gray-500">
+                        Đánh giá rèn luyện chính thức ({getSemesterShortLabel(ongoingSemester)}):
+                      </span>
                       <span className="font-bold text-emerald-700">
-                        {student.officialConduct?.rating || 'Chờ GVCN xác nhận'}
+                        {ongoingOfficial?.rating || 'Chờ GVCN xác nhận'}
                       </span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-gray-500">Điểm thi đua tích lũy:</span>
+                      <span className="text-gray-500">
+                        Điểm thi đua {getSemesterLabel(ongoingSemester)}:
+                      </span>
                       <span className="font-black text-emerald-600 text-sm">
-                        {totalPoints >= 0 ? `+${totalPoints}` : totalPoints} điểm
+                        {ongoingSemesterEval.finalTotalPoints} / {ongoingSemesterEval.initialPoints} điểm
                       </span>
                     </div>
                   </div>
@@ -766,50 +1023,121 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: DISCIPLINE (THI ĐUA & KỶ LUẬT) */}
+          {/* TAB 3: DISCIPLINE (THI ĐUA & KỶ LUẬT THEO HỌC KỲ) */}
           {activeTab === 'discipline' && (
             <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-4 sm:gap-5 items-stretch overflow-hidden">
-              {/* CỘT BÊN TRÁI: Ghi nhận sự việc (CHỈ HIỂN THỊ KHI LÀ GIÁO VIÊN) */}
+              {/* CỘT BÊN TRÁI: Ghi nhận / Chỉnh sửa sự việc (CHỈ HIỂN THỊ KHI LÀ GIÁO VIÊN) */}
               {isTeacher && (
-                <div className="w-full md:w-[380px] lg:w-[420px] xl:w-[450px] shrink-0 bg-white rounded-2xl border border-[#EDB5C1]/70 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+                <div className="w-full md:w-[370px] lg:w-[410px] xl:w-[440px] shrink-0 bg-white rounded-2xl border border-[#EDB5C1]/70 p-4 sm:p-5 shadow-xs flex flex-col justify-between overflow-y-auto custom-scrollbar">
                   <div>
                     <div className="flex items-center justify-between pb-3 border-b border-[#EDB5C1]/30">
                       <div className="flex items-center gap-2 font-bold text-gray-900 text-sm sm:text-base">
                         <div className="w-7 h-7 rounded-xl bg-[#FCF4F6] text-[#1E293B] border border-[#EDB5C1] flex items-center justify-center shrink-0">
-                          <Plus className="w-4 h-4 stroke-[2.5]" />
+                          {editingRecordId ? (
+                            <Edit2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                          ) : (
+                            <Plus className="w-4 h-4 stroke-[2.5]" />
+                          )}
                         </div>
-                        <span>Ghi nhận sự việc</span>
+                        <span>
+                          {editingRecordId ? 'Chỉnh sửa sự việc' : 'Ghi nhận sự việc'}
+                        </span>
                       </div>
-                      <button
-                        type="submit"
-                        form="discipline-form"
-                        className="text-xs font-bold text-[#1E293B] bg-[#FCF4F6] hover:bg-[#EDB5C1] active:scale-95 px-3 py-1.5 rounded-xl border border-[#EDB5C1] shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center gap-1.5 group font-bold"
-                        title="Bấm để lưu cập nhật nề nếp"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#1E293B]" />
-                        <span>Cập nhật nề nếp</span>
-                      </button>
+                      {editingRecordId ? (
+                        <button
+                          type="button"
+                          onClick={handleCancelEditDiscipline}
+                          className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer"
+                        >
+                          Hủy sửa
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          form="discipline-form"
+                          className="text-xs font-bold text-[#1E293B] bg-[#FCF4F6] hover:bg-[#EDB5C1] active:scale-95 px-3 py-1.5 rounded-xl border border-[#EDB5C1] shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center gap-1.5 group"
+                          title="Bấm để lưu cập nhật nề nếp"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#1E293B]" />
+                          <span>Cập nhật nề nếp</span>
+                        </button>
+                      )}
                     </div>
 
                     <form
                       id="discipline-form"
-                      onSubmit={handleCreateDiscipline}
-                      className="mt-3.5 space-y-3.5"
+                      onSubmit={handleCreateOrUpdateDiscipline}
+                      className="mt-3.5 space-y-3"
                     >
-                      {/* 1. Ngày tháng */}
+                      {/* 1. Ngày tháng + tự nhận diện học kỳ */}
                       <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-[#C98292]" />
-                          <span>Ngày tháng</span>
-                          <span className="text-red-500">*</span>
+                        <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between gap-1.5">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-[#C98292]" />
+                            <span>Ngày tháng</span>
+                            <span className="text-red-500">*</span>
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              formDateDetection.isWithinConfiguredRange
+                                ? 'bg-[#FCF4F6] text-[#1E293B] border-[#EDB5C1]'
+                                : 'bg-amber-50 text-amber-800 border-amber-300'
+                            }`}
+                          >
+                            {getSemesterShortLabel(
+                              formDateDetection.isWithinConfiguredRange
+                                ? formDateDetection.semester
+                                : outOfRangeSemesterOverride || formDateDetection.semester
+                            )}{' '}
+                            •{' '}
+                            {formDateDetection.isWithinConfiguredRange
+                              ? formDateDetection.schoolYear
+                              : selectedSchoolYear}
+                          </span>
                         </label>
                         <input
                           type="date"
                           required
                           value={disciplineDate}
-                          onChange={(e) => setDisciplineDate(e.target.value)}
+                          onChange={(e) => {
+                            setDisciplineDate(e.target.value);
+                            setOutOfRangeSemesterOverride('');
+                          }}
                           className="w-full px-3.5 py-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs sm:text-sm font-semibold text-gray-800 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/50 shadow-2xs transition-all"
                         />
+
+                        {/* Cảnh báo nếu ngày sự việc nằm ngoài khoảng thời gian HK I & HK II đã cấu hình */}
+                        {!formDateDetection.isWithinConfiguredRange && (
+                          <div className="mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 space-y-1.5">
+                            <div className="flex items-start gap-1.5 font-bold">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                              <span>
+                                Ngày {formatViDate(disciplineDate)} nằm ngoài lịch Học kỳ I (
+                                {formatViDate(formDateDetection.matchedConfig.hk1Start)}–
+                                {formatViDate(formDateDetection.matchedConfig.hk1End)}) và Học kỳ II (
+                                {formatViDate(formDateDetection.matchedConfig.hk2Start)}–
+                                {formatViDate(formDateDetection.matchedConfig.hk2End)}).
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 pl-5">
+                              <span className="text-[10px] font-semibold text-amber-800">
+                                Ghi nhận vào:
+                              </span>
+                              <select
+                                value={
+                                  outOfRangeSemesterOverride || formDateDetection.semester
+                                }
+                                onChange={(e) =>
+                                  setOutOfRangeSemesterOverride(e.target.value as SemesterId)
+                                }
+                                className="px-2 py-0.5 bg-white border border-amber-300 rounded-lg text-[11px] font-bold text-amber-950 cursor-pointer"
+                              >
+                                <option value="hk1">Học kỳ I ({selectedSchoolYear})</option>
+                                <option value="hk2">Học kỳ II ({selectedSchoolYear})</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* 2. Nội dung ghi nhận (Quy tắc thi đua) */}
@@ -871,183 +1199,307 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                           <span>Ghi chú</span>
                         </label>
                         <textarea
-                          rows={3}
+                          rows={2}
                           value={disciplineNote}
                           onChange={(e) => setDisciplineNote(e.target.value)}
                           placeholder="Ghi chú thêm chi tiết hoàn cảnh sự việc (tùy chọn)..."
-                          className="w-full p-3 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/50 shadow-2xs resize-none transition-all"
+                          className="w-full p-2.5 bg-gray-50/70 focus:bg-white border border-gray-200 focus:border-[#EDB5C1] rounded-xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1]/50 shadow-2xs resize-none transition-all"
                         />
                       </div>
                     </form>
                   </div>
 
-                  {/* 4. Nút Lưu ghi nhận sự việc */}
-                  <div className="pt-3.5 border-t border-gray-100 mt-2">
+                  {/* 4. Nút Lưu ghi nhận / Lưu chỉnh sửa */}
+                  <div className="pt-3 border-t border-gray-100 mt-2">
                     <button
                       type="submit"
                       form="discipline-form"
-                      className="w-full py-3 px-4 rounded-xl font-black text-xs sm:text-sm bg-[#EDB5C1] hover:bg-[#E4A7B4] active:scale-98 text-[#1E293B] shadow-md shadow-[#EDB5C1]/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm bg-[#EDB5C1] hover:bg-[#E4A7B4] active:scale-98 text-[#1E293B] shadow-md shadow-[#EDB5C1]/25 transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                      <span>Lưu ghi nhận sự việc</span>
+                      <span>
+                        {editingRecordId ? 'Lưu chỉnh sửa sự việc' : 'Lưu ghi nhận sự việc'}
+                      </span>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* CỘT BÊN PHẢI (HOẶC TOÀN BỘ KHI LÀ HỌC SINH): Kỳ đánh giá & Lịch sử sự việc */}
-              <div className="flex-1 min-w-0 flex flex-col gap-3 sm:gap-4 overflow-hidden">
-                {/* 1. Thẻ Kỳ đánh giá (Tháng / Học kỳ / Cả năm), Điểm thi đua & Xếp loại gợi ý */}
+              {/* CỘT BÊN PHẢI (HOẶC TOÀN BỘ KHI LÀ HỌC SINH): Kỳ đánh giá theo Học kỳ & Lịch sử sự việc */}
+              <div className="flex-1 min-w-0 flex flex-col gap-3 sm:gap-3.5 overflow-hidden">
+                {/* 1. Thẻ Kỳ đánh giá (Năm học / Học kỳ I / Học kỳ II / Cả năm), Điểm thi đua & Xếp loại gợi ý */}
                 <div className="bg-linear-to-r from-gray-50 via-[#FCF4F6] to-gray-50 rounded-2xl border border-gray-200/90 p-3.5 sm:p-4 flex flex-col gap-3 shrink-0 shadow-2xs">
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    {/* KỲ ĐÁNH GIÁ (DROPDOWN) & NÚT XUẤT EXCEL VI PHẠM (THEO MẪU 8A3) */}
-                    <div className="space-y-1">
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        KỲ ĐÁNH GIÁ (THÁNG)
-                      </label>
-                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  {/* Thanh bộ lọc Năm học + Học kỳ + Tháng + Xuất Excel */}
+                  <div className="flex items-end justify-between gap-2.5 flex-wrap">
+                    <div className="flex items-end gap-2 flex-wrap">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                          NĂM HỌC
+                        </label>
                         <select
-                          value={selectedPeriod}
-                          onChange={(e) => setSelectedPeriod(e.target.value)}
-                          className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-bold text-gray-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] cursor-pointer shrink-0"
+                          value={selectedSchoolYear}
+                          onChange={(e) => setSelectedSchoolYear(e.target.value)}
+                          className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] cursor-pointer"
                         >
-                          {periodOptions.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                              {opt.label}
+                          {availableSchoolYears.map((yr) => (
+                            <option key={yr} value={yr}>
+                              {yr}
                             </option>
                           ))}
                         </select>
+                      </div>
 
-                        {/* Nút “📗 Xuất Excel vi phạm” xuất hiện trong hồ sơ của TẤT CẢ học sinh */}
-                        <button
-                          type="button"
-                          onClick={handleExportViolationExcel}
-                          disabled={isExportingExcel}
-                          className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50 shrink-0"
-                          title="Tải tệp Excel tổng hợp vi phạm thi đua và kỷ luật của học sinh này"
-                        >
-                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                          <span className="whitespace-nowrap">
-                            {isExportingExcel ? 'Đang xuất...' : 'Xuất Excel vi phạm'}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-200/70 text-emerald-900 shrink-0">
-                            {periodBadgeLabel}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* ĐIỂM THI ĐUA CÒN LẠI */}
-                    <div className="text-right sm:text-center space-y-0.5">
-                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        ĐIỂM THI ĐUA CÒN LẠI
-                      </div>
-                      <div className="text-xl sm:text-2xl font-black text-gray-900 flex items-center justify-end sm:justify-center gap-1.5">
-                        <span>{studentEmulation.finalTotalPoints}đ</span>
-                        <span
-                          className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
-                            periodNetPoints >= 0
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-rose-50 text-rose-700'
-                          }`}
-                          title={`Điểm chuẩn: ${studentEmulation.initialPoints}đ, Thưởng: +${periodBonusPoints}đ, Trừ: -${periodPenaltyPoints}đ`}
-                        >
-                          ({studentEmulation.initialPoints}
-                          {periodBonusPoints > 0 ? ` +${periodBonusPoints}` : ' +0'}
-                          {periodPenaltyPoints > 0 ? ` -${periodPenaltyPoints}` : ' -0'})
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* XẾP LOẠI GỢI Ý THEO THI ĐUA */}
-                    <div className="text-right space-y-0.5">
-                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        Xếp loại gợi ý theo thi đua
-                      </div>
                       <div>
-                        <span
-                          className={`inline-block px-3 py-1 rounded-xl text-xs sm:text-sm font-black border ${
-                            studentEmulation.suggestedRating === 'Tốt'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : studentEmulation.suggestedRating === 'Khá'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : studentEmulation.suggestedRating === 'Đạt'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-rose-50 text-rose-700 border-rose-200'
-                          }`}
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                          HỌC KỲ
+                        </label>
+                        <select
+                          value={selectedSemesterFilter}
+                          onChange={(e) =>
+                            setSelectedSemesterFilter(e.target.value as SemesterFilter)
+                          }
+                          className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] cursor-pointer"
                         >
-                          {studentEmulation.suggestedRating}
-                        </span>
+                          <option value="hk1">
+                            Học kỳ I {defaultSchoolYear === selectedSchoolYear && ongoingSemester === 'hk1' ? '(Đang diễn ra)' : ''}
+                          </option>
+                          <option value="hk2">
+                            Học kỳ II {defaultSchoolYear === selectedSchoolYear && ongoingSemester === 'hk2' ? '(Đang diễn ra)' : ''}
+                          </option>
+                          <option value="all">Cả năm (tách riêng 2 kỳ)</option>
+                        </select>
                       </div>
+
+                      {selectedSemesterFilter !== 'all' && (
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                            PHẠM VI THÁNG
+                          </label>
+                          <select
+                            value={selectedMonthFilter}
+                            onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                            className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#EDB5C1] cursor-pointer"
+                          >
+                            <option value="all">
+                              Trọn {getSemesterLabel(selectedSemesterFilter)}
+                            </option>
+                            {availableMonthsInScope.map((m) => (
+                              <option key={m.value} value={m.value}>
+                                {m.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
-                  </div>
 
-                  {/* Cảnh báo hạ bậc nếu vi phạm điều kiện bổ sung */}
-                  {studentEmulation.isDowngraded &&
-                    studentEmulation.downgradeReason && (
-                      <div className="text-[11px] text-amber-800 bg-amber-50/90 border border-amber-200/90 rounded-xl px-3 py-1.5 flex items-center gap-2">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span>{studentEmulation.downgradeReason}</span>
-                      </div>
-                    )}
-
-                  {/* Mục Kết quả đánh giá rèn luyện chính thức */}
-                  <div className="pt-2.5 border-t border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-700">
-                        Đánh giá rèn luyện chính thức:
+                    {/* Nút “📗 Xuất Excel vi phạm” */}
+                    <button
+                      type="button"
+                      onClick={handleExportViolationExcel}
+                      disabled={isExportingExcel}
+                      className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50 shrink-0"
+                      title="Tải tệp Excel tổng hợp vi phạm thi đua và kỷ luật của học sinh này"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <span className="whitespace-nowrap">
+                        {isExportingExcel ? 'Đang xuất...' : 'Xuất Excel vi phạm'}
                       </span>
-                      {student.officialConduct ? (
-                        <span
-                          className={`px-2.5 py-0.5 rounded-lg font-black border text-xs ${
-                            student.officialConduct.rating === 'Tốt'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : student.officialConduct.rating === 'Khá'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : student.officialConduct.rating === 'Đạt'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-rose-50 text-rose-700 border-rose-200'
-                          }`}
-                        >
-                          {student.officialConduct.rating}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 italic">
-                          Chưa xác nhận (chờ GVCN)
-                        </span>
-                      )}
-                      {student.officialConduct?.reason && (
-                        <span
-                          className="text-gray-500 text-[11px] max-w-xs truncate"
-                          title={student.officialConduct.reason}
-                        >
-                          - {student.officialConduct.reason}
-                        </span>
-                      )}
-                    </div>
-
-                    {isTeacher && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOfficialRating(
-                            student.officialConduct?.rating ||
-                              (studentEmulation.suggestedRating as ConductGrade)
-                          );
-                          setOfficialReason(student.officialConduct?.reason || '');
-                          setIsOfficialModalOpen(true);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-[#FCF4F6] hover:bg-[#EDB5C1] text-[#1E293B] font-bold text-xs border border-[#EDB5C1] transition-all cursor-pointer self-start sm:self-auto flex items-center gap-1 active:scale-95"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>
-                          {student.officialConduct
-                            ? 'Điều chỉnh chính thức'
-                            : 'Xác nhận chính thức'}
-                        </span>
-                      </button>
-                    )}
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-200/70 text-emerald-900 shrink-0">
+                        {periodBadgeLabel}
+                      </span>
+                    </button>
                   </div>
+
+                  {/* HIỂN THỊ ĐIỂM THI ĐUA: ĐƠN LẺ 1 HỌC KỲ HOẶC TÁCH RIÊNG 2 HỌC KỲ KHI CHỌN CẢ NĂM */}
+                  {selectedSemesterFilter !== 'all' ? (
+                    <>
+                      <div className="flex items-center justify-between gap-4 flex-wrap pt-1 border-t border-gray-200/60">
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            ĐIỂM THI ĐUA CÒN LẠI ({getSemesterLabel(selectedSemesterFilter).toUpperCase()})
+                          </div>
+                          <div className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2 flex-wrap">
+                            <span>
+                              {currentSemesterEval.finalTotalPoints} / {currentSemesterEval.initialPoints}đ
+                            </span>
+                            <span
+                              className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                                currentSemesterEval.plusPoints - currentSemesterEval.minusPoints >= 0
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-rose-50 text-rose-700'
+                              }`}
+                              title={`Điểm đầu kỳ: ${currentSemesterEval.initialPoints}đ, Thưởng: +${currentSemesterEval.plusPoints}đ, Trừ: -${currentSemesterEval.minusPoints}đ`}
+                            >
+                              ({currentSemesterEval.initialPoints} +{currentSemesterEval.plusPoints} -
+                              {currentSemesterEval.minusPoints})
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-gray-500">
+                            Thời gian {getSemesterShortLabel(selectedSemesterFilter)}:{' '}
+                            <strong className="text-gray-700">
+                              {formatViDate(
+                                selectedSemesterFilter === 'hk1'
+                                  ? selectedYearSchedule.hk1Start
+                                  : selectedYearSchedule.hk2Start
+                              )}{' '}
+                              –{' '}
+                              {formatViDate(
+                                selectedSemesterFilter === 'hk1'
+                                  ? selectedYearSchedule.hk1End
+                                  : selectedYearSchedule.hk2End
+                              )}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="text-right space-y-1">
+                          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Xếp loại gợi ý ({getSemesterShortLabel(selectedSemesterFilter)})
+                          </div>
+                          <div>
+                            <span
+                              className={`inline-block px-3 py-1 rounded-xl text-xs sm:text-sm font-black border ${getSuggestedRatingBadgeClass(
+                                currentSemesterEval.suggestedRating
+                              )}`}
+                            >
+                              {currentSemesterEval.suggestedRating}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Đánh giá rèn luyện chính thức cho học kỳ đang xem */}
+                      <div className="pt-2 border-t border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-gray-700">
+                            Đánh giá rèn luyện chính thức ({getSemesterShortLabel(selectedSemesterFilter)}):
+                          </span>
+                          {activeSemesterOfficial ? (
+                            <span
+                              className={`px-2.5 py-0.5 rounded-lg font-black border text-xs ${getSuggestedRatingBadgeClass(
+                                activeSemesterOfficial.rating
+                              )}`}
+                            >
+                              {activeSemesterOfficial.rating}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">
+                              Chưa xác nhận (chờ GVCN)
+                            </span>
+                          )}
+                          {activeSemesterOfficial?.reason && (
+                            <span
+                              className="text-gray-500 text-[11px] max-w-xs truncate"
+                              title={activeSemesterOfficial.reason}
+                            >
+                              - {activeSemesterOfficial.reason}
+                            </span>
+                          )}
+                        </div>
+
+                        {isTeacher && (
+                          <button
+                            type="button"
+                            onClick={() => openOfficialModalForSemester(selectedSemesterFilter)}
+                            className="px-2.5 py-1 rounded-lg bg-[#FCF4F6] hover:bg-[#EDB5C1] text-[#1E293B] font-bold text-xs border border-[#EDB5C1] transition-all cursor-pointer self-start sm:self-auto flex items-center gap-1 active:scale-95"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>
+                              {activeSemesterOfficial
+                                ? 'Điều chỉnh chính thức'
+                                : 'Xác nhận chính thức'}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    /* CHẾ ĐỘ CẢ NĂM: HIỂN THỊ TÁCH BIỆT HOÀN TOÀN HK I & HK II (KHÔNG CỘNG THÀNH 400Đ) */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-gray-200/60">
+                      {/* Khối Học kỳ I */}
+                      <div className="p-3 rounded-xl bg-white border border-sky-200/90 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-sky-900">
+                            HỌC KỲ I
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-black border ${getSuggestedRatingBadgeClass(
+                              hk1Emulation.suggestedRating
+                            )}`}
+                          >
+                            Gợi ý: {hk1Emulation.suggestedRating}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-lg font-black text-gray-900">
+                            {hk1Emulation.finalTotalPoints} / {hk1Emulation.initialPoints}đ
+                          </span>
+                          <span className="text-[11px] font-bold text-gray-600">
+                            (+{hk1Emulation.plusPoints} / -{hk1Emulation.minusPoints})
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-gray-500 flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
+                          <span>
+                            Chính thức:{' '}
+                            <strong className="text-gray-800">
+                              {hk1Official?.rating || 'Chưa xác nhận'}
+                            </strong>
+                          </span>
+                          {isTeacher && (
+                            <button
+                              type="button"
+                              onClick={() => openOfficialModalForSemester('hk1')}
+                              className="text-[10px] font-bold text-[#1E293B] underline hover:text-pink-700 cursor-pointer"
+                            >
+                              {hk1Official ? 'Sửa' : 'Xác nhận'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Khối Học kỳ II */}
+                      <div className="p-3 rounded-xl bg-white border border-emerald-200/90 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-emerald-900">
+                            HỌC KỲ II
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-black border ${getSuggestedRatingBadgeClass(
+                              hk2Emulation.suggestedRating
+                            )}`}
+                          >
+                            Gợi ý: {hk2Emulation.suggestedRating}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-lg font-black text-gray-900">
+                            {hk2Emulation.finalTotalPoints} / {hk2Emulation.initialPoints}đ
+                          </span>
+                          <span className="text-[11px] font-bold text-gray-600">
+                            (+{hk2Emulation.plusPoints} / -{hk2Emulation.minusPoints})
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-gray-500 flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
+                          <span>
+                            Chính thức:{' '}
+                            <strong className="text-gray-800">
+                              {hk2Official?.rating || 'Chưa xác nhận'}
+                            </strong>
+                          </span>
+                          {isTeacher && (
+                            <button
+                              type="button"
+                              onClick={() => openOfficialModalForSemester('hk2')}
+                              className="text-[10px] font-bold text-[#1E293B] underline hover:text-pink-700 cursor-pointer"
+                            >
+                              {hk2Official ? 'Sửa' : 'Xác nhận'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Bảng Lịch sử sự việc - THANH CUỘN CHỈ Ở ĐÂY */}
@@ -1060,20 +1512,21 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                       </span>
                     </div>
                     <span className="text-[11px] text-gray-400">
-                      Cuộn danh sách tại đây
+                      {selectedSemesterFilter === 'all'
+                        ? `Năm học ${selectedSchoolYear}`
+                        : `${getSemesterLabel(selectedSemesterFilter)} • ${selectedSchoolYear}`}
                     </span>
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar scroll-smooth">
                     <table className="w-full text-left border-collapse text-xs sm:text-sm">
                       <thead className="sticky top-0 bg-white z-10 border-b border-gray-200 text-gray-600 font-bold">
                         <tr>
-                          <th className="py-2.5 px-4 w-28 sm:w-32">Ngày</th>
-                          <th className="py-2.5 px-4">Nội dung sự việc</th>
-                          <th className="py-2.5 px-4 w-24 sm:w-28 text-center">
-                            Điểm
-                          </th>
+                          <th className="py-2.5 px-3 sm:px-4 w-28 sm:w-32">Ngày</th>
+                          <th className="py-2.5 px-3 sm:px-4">Nội dung sự việc</th>
+                          <th className="py-2.5 px-2 w-20 text-center">Học kỳ</th>
+                          <th className="py-2.5 px-3 w-20 text-center">Điểm</th>
                           {isTeacher && (
-                            <th className="py-2.5 px-4 w-14 text-center">Xóa</th>
+                            <th className="py-2.5 px-3 w-24 text-center">Thao tác</th>
                           )}
                         </tr>
                       </thead>
@@ -1081,60 +1534,102 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                         {displayedDiscipline.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={isTeacher ? 4 : 3}
+                              colSpan={isTeacher ? 5 : 4}
                               className="py-14 text-center text-gray-400"
                             >
-                              Chưa có sự việc nào được ghi nhận trong kỳ đánh giá này.
+                              Chưa có sự việc nào được ghi nhận trong học kỳ này.
                             </td>
                           </tr>
                         ) : (
-                          displayedDiscipline.map((d) => (
-                            <tr
-                              key={d.id}
-                              className="hover:bg-gray-50/70 transition-colors"
-                            >
-                              <td className="py-3 px-4 font-medium text-gray-600 whitespace-nowrap text-xs sm:text-sm">
-                                {formatViDate(d.date)}
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="font-bold text-gray-900 text-xs sm:text-sm">
-                                  {d.ruleName}
-                                </div>
-                                {d.note && (
-                                  <div className="text-xs text-gray-500 mt-0.5 font-normal">
-                                    {d.note}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="py-3 px-4 text-center">
-                                <span
-                                  className={`font-black text-xs sm:text-sm ${
-                                    d.points < 0
-                                      ? 'text-red-600'
-                                      : 'text-emerald-600'
-                                  }`}
-                                >
-                                  {d.points > 0 ? `+${d.points}` : d.points}
-                                </span>
-                              </td>
-                              {isTeacher && (
-                                <td className="py-3 px-4 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      onDeleteDiscipline(d.id);
-                                    }}
-                                    className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-90 transition-all cursor-pointer inline-flex items-center justify-center group"
-                                    title={`Xóa sự việc "${d.ruleName}"`}
-                                  >
-                                    <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                  </button>
+                          displayedDiscipline.map((d) => {
+                            const scope = getRecordScope(
+                              d,
+                              state.semesterConfigs,
+                              state.config.schoolYear
+                            );
+                            const isEditingThis = editingRecordId === d.id;
+                            return (
+                              <tr
+                                key={d.id}
+                                className={`transition-colors ${
+                                  isEditingThis
+                                    ? 'bg-[#FCF4F6]'
+                                    : 'hover:bg-gray-50/70'
+                                }`}
+                              >
+                                <td className="py-3 px-3 sm:px-4 font-medium text-gray-600 whitespace-nowrap text-xs sm:text-sm">
+                                  {formatViDate(d.date)}
                                 </td>
-                              )}
-                            </tr>
-                          ))
+                                <td className="py-3 px-3 sm:px-4">
+                                  <div className="font-bold text-gray-900 text-xs sm:text-sm">
+                                    {d.ruleName}
+                                  </div>
+                                  {d.note && (
+                                    <div className="text-xs text-gray-500 mt-0.5 font-normal">
+                                      {d.note}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <span
+                                    className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                      scope.semester === 'hk1'
+                                        ? 'bg-sky-50 text-sky-800 border-sky-200'
+                                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    }`}
+                                  >
+                                    {getSemesterShortLabel(scope.semester)}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  <span
+                                    className={`font-black text-xs sm:text-sm ${
+                                      d.points < 0
+                                        ? 'text-red-600'
+                                        : 'text-emerald-600'
+                                    }`}
+                                  >
+                                    {d.points > 0 ? `+${d.points}` : d.points}
+                                  </span>
+                                </td>
+                                {isTeacher && (
+                                  <td className="py-3 px-3 text-center">
+                                    <div className="inline-flex items-center justify-center gap-1">
+                                      {onUpdateDiscipline && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleStartEditDiscipline(d);
+                                          }}
+                                          className="p-1.5 rounded-xl text-gray-400 hover:text-[#1E293B] hover:bg-[#FCF4F6] active:scale-90 transition-all cursor-pointer"
+                                          title={`Chỉnh sửa sự việc "${d.ruleName}"`}
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          if (editingRecordId === d.id) {
+                                            handleCancelEditDiscipline();
+                                          }
+                                          onDeleteDiscipline(d.id);
+                                        }}
+                                        className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 active:scale-90 transition-all cursor-pointer"
+                                        title={`Xóa sự việc "${d.ruleName}"`}
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -1388,8 +1883,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   <option value="Chưa đạt">Chưa đạt</option>
                 </select>
                 <p className="text-[11px] text-gray-500 mt-1">
-                  Xếp loại gợi ý theo thi đua hiện tại:{' '}
-                  <strong>{studentEmulation.suggestedRating}</strong>
+                  Xếp loại gợi ý ({getSemesterLabel(officialTargetSemester)} • {selectedSchoolYear}):{' '}
+                  <strong>
+                    {officialTargetSemester === 'hk2'
+                      ? hk2Emulation.suggestedRating
+                      : hk1Emulation.suggestedRating}
+                  </strong>
                 </p>
               </div>
 

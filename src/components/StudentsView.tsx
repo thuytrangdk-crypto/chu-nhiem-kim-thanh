@@ -25,12 +25,20 @@ import {
 } from 'lucide-react';
 import {
   calculateAverageGrade,
-  calculateTotalPoints,
   exportStudentsToCsv,
   formatViDate,
   generateId,
+  getTodayStr,
   parseCsvStudents,
 } from '../utils/helpers';
+import { getEmulationConfigForClass } from '../utils/emulationEvaluation';
+import {
+  evaluateSemesterEmulation,
+  filterRecordsForSemester,
+  getActiveSemesterForDate,
+  inferNaturalSchoolYearFromDate,
+  normalizeSchoolYear,
+} from '../utils/semesterUtils';
 import { EmulationExportModal } from './EmulationExportModal';
 
 interface StudentsViewProps {
@@ -434,7 +442,29 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               <tbody className="divide-y divide-gray-100 text-gray-700">
                 {filteredStudents.map((s, idx) => {
                   const avg = calculateAverageGrade(s.grades);
-                  const points = calculateTotalPoints(state.discipline, s.id);
+                  const todayStr = getTodayStr();
+                  const activeYear = normalizeSchoolYear(
+                    state.config.schoolYear || inferNaturalSchoolYearFromDate(todayStr)
+                  );
+                  const activeSem = getActiveSemesterForDate(
+                    todayStr,
+                    state.semesterConfigs,
+                    activeYear
+                  );
+                  const semEval = evaluateSemesterEmulation(
+                    s.id,
+                    state.discipline,
+                    activeYear,
+                    activeSem,
+                    state.semesterConfigs,
+                    getEmulationConfigForClass(
+                      state.classEmulationConfigs,
+                      state.emulationConfig,
+                      state.config.className,
+                      activeYear
+                    ),
+                    state.config.schoolYear
+                  );
                   const isLeader = s.position && s.position !== 'Học sinh';
 
                   return (
@@ -505,7 +535,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="font-black text-[#1E293B]">
-                          +{points} đ
+                          {semEval.finalTotalPoints}/{semEval.initialPoints} đ
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
@@ -566,13 +596,40 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
         /* CARD GRID VIEW: 5 CARDS PER ROW ON DESKTOP (CLASS 8A3 STYLE) */
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3 sm:gap-3.5">
           {filteredStudents.map((s) => {
-            const studentDisciplines = state.discipline.filter((d) => d.studentId === s.id);
-            const infractionsCount = studentDisciplines.filter((d) => d.type === 'minus').length;
-            const points = calculateTotalPoints(state.discipline, s.id);
-            const pointsFormatted = points >= 0 ? `+${points} đ` : `${points} đ`;
+            const todayStr = getTodayStr();
+            const activeYear = normalizeSchoolYear(
+              state.config.schoolYear || inferNaturalSchoolYearFromDate(todayStr)
+            );
+            const activeSem = getActiveSemesterForDate(
+              todayStr,
+              state.semesterConfigs,
+              activeYear
+            );
+            const activeSemRecords = filterRecordsForSemester(
+              state.discipline,
+              activeYear,
+              activeSem,
+              state.semesterConfigs,
+              state.config.schoolYear
+            ).filter((d) => d.studentId === s.id);
+            const infractionsCount = activeSemRecords.filter((d) => (d.points || 0) < 0).length;
+            const semEval = evaluateSemesterEmulation(
+              s.id,
+              state.discipline,
+              activeYear,
+              activeSem,
+              state.semesterConfigs,
+              getEmulationConfigForClass(
+                state.classEmulationConfigs,
+                state.emulationConfig,
+                state.config.className,
+                activeYear
+              ),
+              state.config.schoolYear
+            );
+            const pointsFormatted = `${semEval.finalTotalPoints}/${semEval.initialPoints} đ`;
 
             // Attendance label for today
-            const todayStr = new Date().toISOString().substring(0, 10);
             const todayAttendance = state.attendance.find(
               (a) => a.studentId === s.id && a.date === todayStr
             );

@@ -88,10 +88,14 @@ export function getConductFromGrade(avg: number | null): string {
   return 'Chưa đạt';
 }
 
-export function calculateTotalPoints(records: DisciplineRecord[], studentId: string): number {
+export function calculateTotalPoints(
+  records: DisciplineRecord[],
+  studentId: string,
+  initialPoints: number = 200
+): number {
   return records
     .filter((r) => r.studentId === studentId)
-    .reduce((sum, r) => sum + (r.points || 0), 100); // 100 điểm nề nếp ban đầu chuẩn
+    .reduce((sum, r) => sum + (r.points || 0), initialPoints);
 }
 
 export function exportStudentsToCsv(students: Student[]): string {
